@@ -3,119 +3,229 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CringeClan</title>
+    <title>CringeClan - Startseite</title>
     <style>
-        /* Google Sites-Stil */
-        body {
-            font-family: 'Roboto', Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            background-color: #f8f9fa;
-            color: #202124;
+        /* Google Sites exakter Stil */
+        :root {
+            --primary-color: #1a73e8;
+            --header-bg: white;
+            --nav-bg: #f8f9fa;
+            --border-color: #dadce0;
+            --text-primary: #202124;
+            --text-secondary: #5f6368;
         }
         
-        /* Header wie bei Google Sites */
-        .header {
+        body {
+            font-family: 'Google Sans', Roboto, Arial, sans-serif;
+            margin: 0;
+            padding: 0;
             background-color: white;
-            border-bottom: 1px solid #dadce0;
-            padding: 16px 24px;
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+        
+        /* Header */
+        .sites-header {
+            height: 64px;
+            display: flex;
+            align-items: center;
+            padding: 0 24px;
+            border-bottom: 1px solid var(--border-color);
+            background: var(--header-bg);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        .sites-logo {
+            font-size: 22px;
+            font-weight: 500;
+            color: var(--text-secondary);
             display: flex;
             align-items: center;
         }
         
-        .logo {
-            font-size: 22px;
-            font-weight: 500;
-            color: #5f6368;
+        /* Navigation */
+        .sites-nav {
+            background: var(--nav-bg);
+            border-bottom: 1px solid var(--border-color);
+            padding: 0 24px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            overflow-x: auto;
+            white-space: nowrap;
         }
         
-        /* Navigationsleiste */
-        .nav {
-            background-color: #f1f3f4;
-            padding: 12px 24px;
-            border-bottom: 1px solid #dadce0;
-        }
-        
-        .nav a {
-            color: #202124;
+        .nav-link {
+            color: var(--text-primary);
             text-decoration: none;
-            margin-right: 20px;
+            padding: 12px 16px;
             font-size: 14px;
+            position: relative;
+        }
+        
+        .nav-link.active {
+            color: var(--primary-color);
+        }
+        
+        .nav-link.active::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 16px;
+            right: 16px;
+            height: 3px;
+            background: var(--primary-color);
+            border-radius: 3px 3px 0 0;
         }
         
         /* Hauptinhalt */
-        .container {
+        .sites-content {
             max-width: 900px;
-            margin: 20px auto;
+            margin: 32px auto;
             padding: 0 24px;
         }
         
         .page-title {
             font-size: 32px;
             font-weight: 400;
-            margin-bottom: 20px;
-            color: #202124;
+            margin: 0 0 24px 0;
         }
         
-        .content-box {
-            background-color: white;
+        .content-section {
+            background: white;
+            border: 1px solid var(--border-color);
             border-radius: 8px;
-            border: 1px solid #dadce0;
             padding: 24px;
-            margin-bottom: 20px;
+            margin-bottom: 24px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
         }
         
         /* Footer */
-        .footer {
-            background-color: #f8f9fa;
-            border-top: 1px solid #dadce0;
+        .sites-footer {
+            background: var(--nav-bg);
+            border-top: 1px solid var(--border-color);
             padding: 20px;
             text-align: center;
             font-size: 12px;
-            color: #5f6368;
+            color: var(--text-secondary);
+        }
+        
+        /* Mobile Anpassungen */
+        @media (max-width: 600px) {
+            .sites-content {
+                padding: 0 16px;
+            }
+            
+            .content-section {
+                padding: 16px;
+            }
         }
     </style>
 </head>
 <body>
     <!-- Header -->
-    <div class="header">
-        <div class="logo">CringeClan</div>
-    </div>
+    <header class="sites-header">
+        <div class="sites-logo">CringeClan</div>
+    </header>
     
     <!-- Navigation -->
-    <div class="nav">
-        <a href="#startseite">Startseite</a>
-        <a href="#über-uns">Über uns</a>
-        <a href="#mitglieder">Mitglieder</a>
-        <a href="#events">Events</a>
-        <a href="#kontakt">Kontakt</a>
-    </div>
+    <nav class="sites-nav" id="mainNav">
+        <a href="#startseite" class="nav-link active">Startseite</a>
+        <a href="#über-uns" class="nav-link">Über uns</a>
+        <a href="#mitglieder" class="nav-link">Mitglieder</a>
+        <a href="#events" class="nav-link">Events</a>
+        <a href="#kontakt" class="nav-link">Kontakt</a>
+    </nav>
     
     <!-- Hauptinhalt -->
-    <div class="container">
+    <main class="sites-content">
         <h1 class="page-title">Startseite</h1>
         
-        <div class="content-box">
+        <section class="content-section">
             <h2>Willkommen beim CringeClan!</h2>
             <p>Hier entsteht unsere offizielle Clan-Website. Bald gibt es hier mehr Informationen über uns.</p>
             
             <h3>Aktuelle News</h3>
             <p>Folgt uns auf Discord für die neuesten Updates!</p>
-        </div>
+            
+            <div id="news-container">
+                <!-- News werden per JS geladen -->
+            </div>
+        </section>
         
-        <div class="content-box">
+        <section class="content-section">
             <h3>Clan-Regeln</h3>
             <ul>
                 <li>Respektvolles Verhalten</li>
                 <li>Aktive Teilnahme</li>
                 <li>Teamplay wird großgeschrieben</li>
+                <li>Kein Cheating oder Hacking</li>
+                <li>Regelmäßige Aktivität erforderlich</li>
             </ul>
-        </div>
-    </div>
+        </section>
+        
+        <section class="content-section">
+            <h3>Nächste Events</h3>
+            <div id="events-container">
+                <!-- Events werden per JS geladen -->
+            </div>
+        </section>
+    </main>
     
     <!-- Footer -->
-    <div class="footer">
+    <footer class="sites-footer">
         © 2023 CringeClan | Powered by GitHub Pages
-    </div>
+    </footer>
+    
+    <script>
+        // Aktive Navigation
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                document.querySelectorAll('.nav-link').forEach(el => el.classList.remove('active'));
+                this.classList.add('active');
+                
+                // Hier könntest du Inhalte per AJAX laden
+                console.log(`Lade Inhalt für: ${this.getAttribute('href')}`);
+            });
+        });
+        
+        // Dynamische News
+        const news = [
+            "Neues Clan-Update verfügbar!",
+            "Wöchentliches Turnier am Freitag",
+            "Neue Mitglieder willkommen!"
+        ];
+        
+        const newsContainer = document.getElementById('news-container');
+        news.forEach(item => {
+            const newsItem = document.createElement('p');
+            newsItem.innerHTML = `📢 ${item}`;
+            newsContainer.appendChild(newsItem);
+        });
+        
+        // Dynamische Events
+        const events = [
+            { date: "15.10.2023", title: "Clan-Turnier", desc: "CS:GO Wettkampf" },
+            { date: "22.10.2023", title: "Community-Abend", desc: "Spieleabend" }
+        ];
+        
+        const eventsContainer = document.getElementById('events-container');
+        events.forEach(event => {
+            const eventElement = document.createElement('div');
+            eventElement.style.marginBottom = '10px';
+            eventElement.innerHTML = `
+                <strong>${event.date}</strong>: ${event.title} - ${event.desc}
+            `;
+            eventsContainer.appendChild(eventElement);
+        });
+        
+        // Google Analytics ähnliches Tracking
+        window.addEventListener('load', () => {
+            console.log('Seite geladen - Tracking könnte hier implementiert werden');
+        });
+    </script>
 </body>
 </html>
