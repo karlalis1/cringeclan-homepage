@@ -14,6 +14,8 @@
             --border: #5f6368;
             --admin-accent: #fbbc04;
             --reader-accent: #81c995;
+            --success: #81c995;
+            --error: #f28b82;
         }
         
         * {
@@ -62,7 +64,6 @@
             display: none;
         }
         
-        /* Anmeldebereich */
         .auth-card {
             text-align: center;
         }
@@ -71,7 +72,6 @@
             margin: 20px auto;
         }
         
-        /* Inhaltsbereich */
         .content-section {
             position: relative;
         }
@@ -108,9 +108,9 @@
             background: rgba(255,255,255,0.05);
             border-radius: 8px;
             white-space: pre-wrap;
+            min-height: 200px;
         }
         
-        /* Editorbereich */
         .editor-panel {
             margin-top: 30px;
             padding-top: 20px;
@@ -158,8 +158,30 @@
             padding: 10px;
             margin-top: 15px;
             border-radius: 8px;
-            background: rgba(251, 188, 4, 0.2);
             text-align: center;
+        }
+        
+        .success {
+            background-color: rgba(129, 201, 149, 0.3);
+        }
+        
+        .error {
+            background-color: rgba(242, 139, 130, 0.3);
+        }
+        
+        .loader {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top: 4px solid var(--primary);
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
         
         footer {
@@ -207,7 +229,8 @@
                 <h2>Willkommen, <span id="user-name"></span>!</h2>
                 
                 <div id="displayed-text">
-                    Lade Inhalt...
+                    <div class="loader"></div>
+                    <p style="text-align: center; margin-top: 10px;">Lade Inhalt...</p>
                 </div>
                 
                 <!-- Editor nur für Admins -->
@@ -228,7 +251,8 @@
     </div>
 
     <script>
-        // Whitelists im Code definiert
+        // ================== KONFIGURATION ================== //
+        // Whitelists
         const READER_WHITELIST = [
             "cpamuk6969@gmail.com",
             "leser2@example.com"
@@ -237,6 +261,10 @@
         const ADMIN_WHITELIST = [
             "cringealiyt@gmail.com"
         ];
+        
+        // JSONBin.io Konfiguration
+        const JSONBIN_BIN_ID = "686675398960c979a5b663ce";
+        const JSONBIN_API_KEY = "$2a$10$BCaAiskamnm/0uZ12lCllOX6MvFKiS9vY8WzxASNqzj8aQTWLTQ86";
         
         // Initialer Text
         const DEFAULT_TEXT = `
@@ -251,12 +279,9 @@ Hier sind die neuesten Clan-Infos:
 Bleibt dran für Updates!
         `.trim();
         
-        // Text-Speicher
-        const TEXT_STORAGE_KEY = "cringeclan_portal_text";
-        
         // Google Sign-In Handler
-        function handleGoogleSignIn(response) {
-            // Direktes Auslesen der User-Daten aus der Google Response
+        async function handleGoogleSignIn(response) {
+            // Token verarbeiten
             const userData = parseJwt(response.credential);
             const userEmail = userData.email;
             const userName = userData.name;
@@ -264,8 +289,8 @@ Bleibt dran für Updates!
             document.getElementById("user-name").textContent = userName;
             
             // Berechtigungen prüfen
-            let isAdmin = ADMIN_WHITELIST.includes(userEmail);
-            let isReader = isAdmin || READER_WHITELIST.includes(userEmail);
+            const isAdmin = ADMIN_WHITELIST.includes(userEmail);
+            const isReader = isAdmin || READER_WHITELIST.includes(userEmail);
             
             if (!isReader) {
                 alert("Zugriff verweigert: Deine E-Mail ist nicht berechtigt");
@@ -289,44 +314,88 @@ Bleibt dran für Updates!
                 badge.classList.remove("admin-badge");
             }
             
-            // Text laden
-            loadTextContent();
+            // Text aus JSONBin laden
+            await loadTextContent();
         }
         
-        // Text aus Storage laden
-        function loadTextContent() {
-            const savedText = localStorage.getItem(TEXT_STORAGE_KEY) || DEFAULT_TEXT;
-            document.getElementById("displayed-text").textContent = savedText;
-            
-            // Editor füllen (nur für Admins)
-            if (document.getElementById("editor-panel").classList.contains("hidden") === false) {
-                document.getElementById("text-editor").value = savedText;
+        // Text aus JSONBin laden
+        async function loadTextContent() {
+            try {
+                const response = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/latest`, {
+                    headers: {
+                        "X-Master-Key": JSONBIN_API_KEY,
+                        "X-Bin-Meta": "false"
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Fehler beim Laden: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                const content = data.content || DEFAULT_TEXT;
+                
+                document.getElementById("displayed-text").textContent = content;
+                
+                // Editor füllen (nur für Admins)
+                if (!document.getElementById("editor-panel").classList.contains("hidden")) {
+                    document.getElementById("text-editor").value = content;
+                }
+                
+            } catch (error) {
+                console.error("JSONBin Fehler:", error);
+                document.getElementById("displayed-text").textContent = DEFAULT_TEXT;
+                
+                if (!document.getElementById("editor-panel").classList.contains("hidden")) {
+                    document.getElementById("text-editor").value = DEFAULT_TEXT;
+                }
+                
+                const status = document.getElementById("status-message");
+                status.textContent = "Fehler: Verwende lokalen Text";
+                status.className = "status-message error";
+                status.classList.remove("hidden");
             }
         }
         
-        // Text aktualisieren
-        document.getElementById("update-text").addEventListener("click", () => {
+        // Text in JSONBin aktualisieren
+        document.getElementById("update-text").addEventListener("click", async () => {
             const newText = document.getElementById("text-editor").value;
-            localStorage.setItem(TEXT_STORAGE_KEY, newText);
-            
-            // Erfolgsmeldung anzeigen
             const status = document.getElementById("status-message");
-            status.textContent = "Text erfolgreich aktualisiert!";
+            
+            try {
+                // Update zu JSONBin senden
+                const response = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`, {
+                    method: "PUT",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-Master-Key": JSONBIN_API_KEY,
+                        "X-Bin-Name": "CringeClan Portal Content"
+                    },
+                    body: JSON.stringify({ content: newText })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Fehler ${response.status}`);
+                }
+                
+                // Erfolgsmeldung
+                status.textContent = "Text erfolgreich aktualisiert!";
+                status.className = "status-message success";
+                document.getElementById("displayed-text").textContent = newText;
+                
+            } catch (error) {
+                console.error("Speicherfehler:", error);
+                status.textContent = "Fehler beim Speichern: " + error.message;
+                status.className = "status-message error";
+            }
+            
             status.classList.remove("hidden");
-            
-            // Text sofort aktualisieren
-            document.getElementById("displayed-text").textContent = newText;
-            
-            // Meldung nach 3 Sekunden ausblenden
-            setTimeout(() => {
-                status.classList.add("hidden");
-            }, 3000);
+            setTimeout(() => status.classList.add("hidden"), 3000);
         });
         
-        // Helper: JWT decodieren (stabilere Version)
+        // Helper: JWT decodieren
         function parseJwt(token) {
             try {
-                // Direktes Parsen ohne manuelle Decodierung
                 const base64Url = token.split('.')[1];
                 const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
                 const jsonPayload = decodeURIComponent(
@@ -335,10 +404,9 @@ Bleibt dran für Updates!
                     .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
                     .join('')
                 );
-                
                 return JSON.parse(jsonPayload);
             } catch (e) {
-                console.error("Fehler beim Decodieren des Tokens:", e);
+                console.error("Token Fehler:", e);
                 return {name: "Benutzer", email: "unbekannt@example.com"};
             }
         }
@@ -349,11 +417,26 @@ Bleibt dran für Updates!
             document.getElementById("content-section").classList.add("hidden");
         });
         
-        // Text beim Laden initialisieren
-        window.addEventListener('DOMContentLoaded', () => {
-            if (!localStorage.getItem(TEXT_STORAGE_KEY)) {
-                localStorage.setItem(TEXT_STORAGE_KEY, DEFAULT_TEXT);
+        // Initialer Bin-Setup (nur beim ersten Mal)
+        async function initializeBin() {
+            try {
+                await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`, {
+                    method: "PUT",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-Master-Key": JSONBIN_API_KEY
+                    },
+                    body: JSON.stringify({ content: DEFAULT_TEXT })
+                });
+                console.log("Bin initialisiert");
+            } catch (e) {
+                console.log("Bin existiert bereits");
             }
+        }
+        
+        // Beim Start Bin initialisieren
+        window.addEventListener('DOMContentLoaded', () => {
+            initializeBin();
         });
     </script>
 </body>
