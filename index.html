@@ -3,49 +3,57 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Google Sign-In Text Editor</title>
+    <title>Secure Text Editor | Dark Mode</title>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <style>
         :root {
-            --primary: #4285F4;
-            --secondary: #34A853;
-            --danger: #EA4335;
-            --warning: #FBBC05;
-            --light: #f8f9fa;
-            --dark: #343a40;
-            --gray: #6c757d;
+            --bg-dark: #121212;
+            --bg-card: #1e1e1e;
+            --bg-card-light: #252525;
+            --text-primary: #e0e0e0;
+            --text-secondary: #a0a0a0;
+            --primary: #bb86fc;
+            --primary-dark: #9a67ea;
+            --secondary: #03dac6;
+            --danger: #cf6679;
+            --success: #4caf50;
+            --warning: #ffb300;
         }
         
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
         }
         
         body {
-            background: linear-gradient(135deg, #f5f7fa 0%, #e4edf5 100%);
+            background: var(--bg-dark);
+            color: var(--text-primary);
             min-height: 100vh;
             padding: 20px;
-            color: var(--dark);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
         
         .container {
-            max-width: 1000px;
-            margin: 0 auto;
-            background: white;
+            max-width: 800px;
+            width: 100%;
+            background: var(--bg-card);
             border-radius: 12px;
-            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
             overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            margin-top: 30px;
         }
         
         header {
-            background: linear-gradient(90deg, var(--primary), var(--secondary));
-            color: white;
             padding: 25px 30px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
             display: flex;
             justify-content: space-between;
             align-items: center;
+            background: var(--bg-card-light);
         }
         
         .logo {
@@ -55,65 +63,63 @@
         }
         
         .logo h1 {
-            font-size: 1.8rem;
-            font-weight: 600;
+            font-size: 1.6rem;
+            font-weight: 500;
+            letter-spacing: -0.5px;
         }
         
         .logo-icon {
-            font-size: 2rem;
+            font-size: 24px;
+            color: var(--primary);
         }
         
         .user-info {
             display: flex;
             align-items: center;
-            gap: 15px;
-            background: rgba(255, 255, 255, 0.2);
-            padding: 10px 15px;
-            border-radius: 30px;
-            backdrop-filter: blur(5px);
+            gap: 12px;
         }
         
         .user-avatar {
-            width: 40px;
-            height: 40px;
+            width: 36px;
+            height: 36px;
             border-radius: 50%;
-            border: 2px solid white;
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
         
         .signin-section {
-            padding: 50px 30px;
+            padding: 60px 30px;
             text-align: center;
         }
         
         .signin-section h2 {
             margin-bottom: 25px;
-            color: var(--dark);
-            font-size: 1.6rem;
+            font-weight: 400;
+            font-size: 1.4rem;
+            color: var(--text-secondary);
         }
         
         .signin-btn {
-            background: white;
-            color: var(--dark);
-            border: 1px solid #ddd;
-            border-radius: 4px;
+            background: transparent;
+            color: var(--text-primary);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 6px;
             padding: 12px 24px;
-            font-size: 16px;
+            font-size: 15px;
             cursor: pointer;
             display: inline-flex;
             align-items: center;
             gap: 12px;
             transition: all 0.3s;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
         }
         
         .signin-btn:hover {
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
-            transform: translateY(-2px);
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 255, 255, 0.2);
         }
         
         .google-icon {
-            width: 20px;
-            height: 20px;
+            width: 18px;
+            height: 18px;
         }
         
         .content-section {
@@ -122,66 +128,69 @@
         }
         
         .section-title {
-            font-size: 1.4rem;
+            font-size: 1.2rem;
             margin-bottom: 20px;
             padding-bottom: 10px;
-            border-bottom: 2px solid var(--primary);
-            color: var(--dark);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+            font-weight: 500;
+            letter-spacing: -0.3px;
         }
         
         .editor-container {
             margin-bottom: 30px;
         }
         
-        .editor-container label {
-            display: block;
-            margin-bottom: 10px;
-            font-weight: 500;
-        }
-        
         #content-editor {
             width: 100%;
-            min-height: 200px;
-            padding: 15px;
-            border: 1px solid #ddd;
+            min-height: 250px;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.08);
             border-radius: 8px;
-            font-size: 16px;
+            font-size: 15px;
             resize: vertical;
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+        
+        #content-editor:focus {
+            outline: none;
+            border-color: rgba(187, 134, 252, 0.4);
+            box-shadow: 0 0 0 2px rgba(187, 134, 252, 0.15);
         }
         
         .btn {
-            padding: 12px 24px;
+            padding: 10px 20px;
             border: none;
             border-radius: 6px;
-            font-size: 16px;
+            font-size: 14px;
             cursor: pointer;
             transition: all 0.2s;
             font-weight: 500;
+            background: rgba(255, 255, 255, 0.08);
+            color: var(--text-primary);
+        }
+        
+        .btn:hover {
+            background: rgba(255, 255, 255, 0.15);
         }
         
         .btn-primary {
             background: var(--primary);
-            color: white;
+            color: #121212;
         }
         
         .btn-primary:hover {
-            background: #3367d6;
-        }
-        
-        .btn-secondary {
-            background: var(--secondary);
-            color: white;
-        }
-        
-        .btn-secondary:hover {
-            background: #2d9248;
+            background: var(--primary-dark);
         }
         
         .whitelist-container {
-            background: #f8f9fa;
+            background: rgba(0, 0, 0, 0.2);
             border-radius: 8px;
             padding: 20px;
             margin-top: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
         }
         
         .whitelist-header {
@@ -192,23 +201,34 @@
         }
         
         .whitelist-header h3 {
-            font-size: 1.2rem;
+            font-size: 1.1rem;
+            font-weight: 500;
         }
         
         #user-whitelist {
             width: 100%;
             min-height: 120px;
             padding: 15px;
-            border: 1px solid #ddd;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.08);
             border-radius: 8px;
-            font-size: 16px;
+            font-size: 14px;
             resize: vertical;
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+        
+        #user-whitelist:focus {
+            outline: none;
+            border-color: rgba(3, 218, 198, 0.4);
+            box-shadow: 0 0 0 2px rgba(3, 218, 198, 0.15);
         }
         
         .info-text {
             margin-top: 10px;
-            font-size: 14px;
-            color: var(--gray);
+            font-size: 13px;
+            color: var(--text-secondary);
+            line-height: 1.5;
         }
         
         .message {
@@ -216,18 +236,19 @@
             border-radius: 8px;
             margin: 20px 0;
             display: none;
+            font-size: 14px;
         }
         
         .message-success {
-            background: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
+            background: rgba(76, 175, 80, 0.15);
+            color: var(--success);
+            border: 1px solid rgba(76, 175, 80, 0.3);
         }
         
         .message-error {
-            background: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
+            background: rgba(207, 102, 121, 0.15);
+            color: var(--danger);
+            border: 1px solid rgba(207, 102, 121, 0.3);
         }
         
         .access-denied {
@@ -238,29 +259,37 @@
         
         .access-denied h2 {
             color: var(--danger);
-            margin-bottom: 20px;
+            margin-bottom: 15px;
+            font-weight: 500;
+        }
+        
+        .access-denied p {
+            color: var(--text-secondary);
+            line-height: 1.6;
+            max-width: 500px;
+            margin: 0 auto;
         }
         
         footer {
             text-align: center;
-            padding: 20px;
-            color: var(--gray);
-            font-size: 14px;
-            border-top: 1px solid #eee;
+            padding: 25px;
+            color: var(--text-secondary);
+            font-size: 13px;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
         }
         
         .loading {
             display: none;
             text-align: center;
-            padding: 30px;
+            padding: 40px;
         }
         
         .spinner {
-            border: 4px solid rgba(0, 0, 0, 0.1);
+            border: 3px solid rgba(255, 255, 255, 0.1);
             border-left-color: var(--primary);
             border-radius: 50%;
-            width: 40px;
-            height: 40px;
+            width: 36px;
+            height: 36px;
             animation: spin 1s linear infinite;
             margin: 0 auto 20px;
         }
@@ -270,12 +299,17 @@
         }
         
         .permission-badge {
-            background: var(--warning);
-            color: var(--dark);
+            background: rgba(187, 134, 252, 0.15);
+            color: var(--primary);
             padding: 4px 10px;
             border-radius: 20px;
-            font-size: 0.85rem;
-            margin-left: 10px;
+            font-size: 0.8rem;
+            margin-left: 8px;
+        }
+        
+        .g_id_signin {
+            display: inline-block;
+            margin-top: 10px;
         }
         
         @media (max-width: 768px) {
@@ -288,6 +322,14 @@
             .user-info {
                 margin-top: 10px;
             }
+            
+            .signin-section {
+                padding: 40px 20px;
+            }
+            
+            .content-section {
+                padding: 20px;
+            }
         }
     </style>
 </head>
@@ -295,8 +337,8 @@
     <div class="container">
         <header>
             <div class="logo">
-                <div class="logo-icon">📝</div>
-                <h1>Google Sign-In Text Editor</h1>
+                <div class="logo-icon">🔒</div>
+                <h1>Secure Text Editor</h1>
             </div>
             <div class="user-info" id="user-info" style="display: none;">
                 <img id="user-avatar" class="user-avatar" src="" alt="User Avatar">
@@ -304,7 +346,7 @@
                     <span id="user-name"></span>
                     <span id="user-role" class="permission-badge"></span>
                 </div>
-                <button id="signout-btn" class="btn btn-secondary">Abmelden</button>
+                <button id="signout-btn" class="btn">Abmelden</button>
             </div>
         </header>
         
@@ -314,7 +356,7 @@
                 data-client_id="302339910588-46kgmvp20bo9buje51kerr6f6oqbbobc.apps.googleusercontent.com"
                 data-callback="handleCredentialResponse">
             </div>
-            <div class="g_id_signin" data-type="standard"></div>
+            <div class="g_id_signin" data-type="standard" data-theme="filled_black" data-size="large"></div>
         </div>
         
         <div class="loading" id="loading">
@@ -332,31 +374,31 @@
         
         <div class="content-section" id="content-section">
             <div class="editor-container">
-                <h2 class="section-title">Inhalt bearbeiten</h2>
+                <h2 class="section-title">Bearbeitbarer Inhalt</h2>
                 <textarea id="content-editor" placeholder="Hier können Sie den Inhalt bearbeiten..."></textarea>
-                <div style="margin-top: 15px;">
-                    <button id="save-content-btn" class="btn btn-primary">Inhalt speichern</button>
+                <div style="margin-top: 15px; text-align: right;">
+                    <button id="save-content-btn" class="btn btn-primary">Speichern</button>
                 </div>
             </div>
             
             <div id="admin-section" style="display: none;">
-                <h2 class="section-title">Admin-Bereich</h2>
+                <h2 class="section-title">Admin Bereich</h2>
                 <div class="whitelist-container">
                     <div class="whitelist-header">
-                        <h3>Benutzer-Whitelist</h3>
+                        <h3>Benutzer Whitelist</h3>
                     </div>
-                    <p>Füge E-Mail-Adressen hinzu (eine pro Zeile):</p>
+                    <p>E-Mail-Adressen (eine pro Zeile):</p>
                     <textarea id="user-whitelist" placeholder="user1@example.com&#10;user2@example.com"></textarea>
                     <p class="info-text">Hinweis: Nur diese Benutzer haben Lesezugriff auf den Inhalt.</p>
-                    <div style="margin-top: 15px;">
-                        <button id="save-whitelist-btn" class="btn btn-secondary">Whitelist speichern</button>
+                    <div style="margin-top: 15px; text-align: right;">
+                        <button id="save-whitelist-btn" class="btn btn-primary">Whitelist speichern</button>
                     </div>
                 </div>
             </div>
         </div>
         
         <footer>
-            <p>&copy; 2023 Protected Content Editor | Nur für autorisierte Benutzer</p>
+            <p>&copy; 2023 Secure Text Editor | Nur für autorisierte Benutzer</p>
         </footer>
     </div>
 
@@ -364,7 +406,7 @@
         // Konfiguration
         const BIN_ID = '686675398960c979a5b663ce';
         const MASTER_KEY = '$2a$10$BCaAiskamnm/0uZ12lCllOX6MvFKiS9vY8WzxASNqzj8aQTWLTQ86';
-        const ADMIN_WHITELIST = ['cringealiyt@gmail.com']; // Hier Admin-Emails eintragen
+        const ADMIN_WHITELIST = ['admin@example.com']; // Hier Admin-Emails eintragen
         
         // Globale Variablen
         let currentUser = null;
@@ -411,6 +453,10 @@
                     }
                 });
                 
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
                 const data = await response.json();
                 if (data.record) {
                     appData = data.record;
@@ -440,7 +486,7 @@
             } catch (error) {
                 console.error('Fehler beim Laden der Daten:', error);
                 document.getElementById('loading').style.display = 'none';
-                showMessage('Fehler beim Laden der Daten. Bitte versuche es später erneut.', 'error');
+                showMessage('Fehler beim Laden der Daten: ' + error.message, 'error');
             }
         }
         
@@ -486,6 +532,10 @@
                     body: JSON.stringify(appData)
                 });
                 
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
                 const result = await response.json();
                 if (result.metadata) {
                     showMessage('Daten erfolgreich gespeichert!', 'success');
@@ -494,7 +544,7 @@
                 }
             } catch (error) {
                 console.error('Fehler beim Speichern der Daten:', error);
-                showMessage('Fehler beim Speichern der Daten. Bitte versuche es erneut.', 'error');
+                showMessage('Fehler beim Speichern der Daten: ' + error.message, 'error');
             } finally {
                 document.getElementById('loading').style.display = 'none';
             }
@@ -518,6 +568,18 @@
                 messageElement.style.display = 'none';
             }, 5000);
         }
+        
+        // Initialisiere Google Sign-In mit Dark Theme
+        function initGoogleSignIn() {
+            google.accounts.id.initialize({
+                client_id: "302339910588-46kgmvp20bo9buje51kerr6f6oqbbobc.apps.googleusercontent.com",
+                callback: handleCredentialResponse,
+                ux_mode: "popup"
+            });
+        }
+        
+        // Initialisierung beim Laden der Seite
+        window.onload = initGoogleSignIn;
     </script>
 </body>
 </html>
