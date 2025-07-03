@@ -3,597 +3,521 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CringeClan Admin Portal</title>
+    <title>Google Sign-In Text Editor</title>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <style>
         :root {
-            --primary: #8ab4f8;
-            --background: #202124;
-            --card-bg: #303134;
-            --text: #e8eaed;
-            --border: #5f6368;
-            --admin-accent: #fbbc04;
-            --reader-accent: #81c995;
-            --success: #81c995;
-            --error: #f28b82;
+            --primary: #4285F4;
+            --secondary: #34A853;
+            --danger: #EA4335;
+            --warning: #FBBC05;
+            --light: #f8f9fa;
+            --dark: #343a40;
+            --gray: #6c757d;
         }
         
         * {
-            box-sizing: border-box;
             margin: 0;
             padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
         
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: var(--background);
-            color: var(--text);
-            line-height: 1.6;
-            padding: 20px;
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4edf5 100%);
             min-height: 100vh;
+            padding: 20px;
+            color: var(--dark);
         }
         
         .container {
-            max-width: 900px;
+            max-width: 1000px;
             margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+            overflow: hidden;
         }
         
         header {
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 25px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .logo h1 {
+            font-size: 1.8rem;
+            font-weight: 600;
+        }
+        
+        .logo-icon {
+            font-size: 2rem;
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 10px 15px;
+            border-radius: 30px;
+            backdrop-filter: blur(5px);
+        }
+        
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 2px solid white;
+        }
+        
+        .signin-section {
+            padding: 50px 30px;
             text-align: center;
-            margin-bottom: 30px;
-            padding: 20px;
-            border-bottom: 1px solid var(--border);
         }
         
-        h1 {
-            color: var(--primary);
-            font-size: 2.5rem;
-            margin-bottom: 10px;
-        }
-        
-        .card {
-            background: var(--card-bg);
-            border-radius: 12px;
-            padding: 30px;
+        .signin-section h2 {
             margin-bottom: 25px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            border: 1px solid var(--border);
+            color: var(--dark);
+            font-size: 1.6rem;
         }
         
-        .hidden {
-            display: none;
-        }
-        
-        .auth-card {
-            text-align: center;
-        }
-        
-        .g_id_signin {
-            margin: 20px auto;
-        }
-        
-        .content-section {
-            position: relative;
-        }
-        
-        .badge {
-            position: absolute;
-            top: 15px;
-            right: 15px;
-            padding: 5px 10px;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            font-weight: bold;
-        }
-        
-        .admin-badge {
-            background: var(--admin-accent);
-            color: #202124;
-        }
-        
-        .reader-badge {
-            background: var(--reader-accent);
-            color: #202124;
-        }
-        
-        #displayed-text {
-            font-size: 1.1rem;
-            line-height: 1.8;
-            margin: 20px 0;
-            padding: 20px;
-            background: rgba(255,255,255,0.05);
-            border-radius: 8px;
-            white-space: pre-wrap;
-            min-height: 200px;
-        }
-        
-        .admin-panel {
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 1px solid var(--border);
-        }
-        
-        textarea, input {
-            width: 100%;
-            background: rgba(0,0,0,0.2);
-            color: var(--text);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 15px;
-            font-size: 1rem;
-            font-family: inherit;
-            margin-bottom: 15px;
-        }
-        
-        textarea {
-            min-height: 200px;
-            resize: vertical;
-        }
-        
-        button {
-            background: var(--primary);
-            color: #202124;
-            border: none;
-            padding: 12px 25px;
-            border-radius: 8px;
-            font-weight: bold;
+        .signin-btn {
+            background: white;
+            color: var(--dark);
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 12px 24px;
+            font-size: 16px;
             cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
             transition: all 0.3s;
-            font-size: 1rem;
-            margin-right: 10px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
         }
         
-        button:hover {
-            opacity: 0.9;
+        .signin-btn:hover {
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
             transform: translateY(-2px);
         }
         
-        .btn-danger {
-            background: #f28b82;
+        .google-icon {
+            width: 20px;
+            height: 20px;
         }
         
-        .logout-btn {
-            background: #5f6368;
-            color: white;
-            margin-top: 20px;
+        .content-section {
+            display: none;
+            padding: 30px;
         }
         
-        .status-message {
-            padding: 10px;
-            margin: 15px 0;
+        .section-title {
+            font-size: 1.4rem;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--primary);
+            color: var(--dark);
+        }
+        
+        .editor-container {
+            margin-bottom: 30px;
+        }
+        
+        .editor-container label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: 500;
+        }
+        
+        #content-editor {
+            width: 100%;
+            min-height: 200px;
+            padding: 15px;
+            border: 1px solid #ddd;
             border-radius: 8px;
-            text-align: center;
+            font-size: 16px;
+            resize: vertical;
         }
         
-        .success {
-            background-color: rgba(129, 201, 149, 0.3);
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 500;
         }
         
-        .error {
-            background-color: rgba(242, 139, 130, 0.3);
+        .btn-primary {
+            background: var(--primary);
+            color: white;
         }
         
-        .loader {
-            border: 4px solid rgba(255, 255, 255, 0.3);
-            border-radius: 50%;
-            border-top: 4px solid var(--primary);
-            width: 30px;
-            height: 30px;
-            animation: spin 1s linear infinite;
-            margin: 20px auto;
+        .btn-primary:hover {
+            background: #3367d6;
         }
         
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+        .btn-secondary {
+            background: var(--secondary);
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #2d9248;
         }
         
         .whitelist-container {
-            margin-top: 30px;
-        }
-        
-        .whitelist-section {
-            display: flex;
-            gap: 15px;
-            margin-bottom: 20px;
-        }
-        
-        .whitelist-box {
-            flex: 1;
-            padding: 15px;
-            border: 1px solid var(--border);
+            background: #f8f9fa;
             border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
         }
         
-        .whitelist-list {
-            margin: 10px 0;
-            padding: 0;
-            list-style-type: none;
-            max-height: 200px;
-            overflow-y: auto;
-        }
-        
-        .whitelist-list li {
+        .whitelist-header {
             display: flex;
             justify-content: space-between;
-            padding: 8px;
-            border-bottom: 1px solid var(--border);
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .whitelist-header h3 {
+            font-size: 1.2rem;
+        }
+        
+        #user-whitelist {
+            width: 100%;
+            min-height: 120px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            resize: vertical;
+        }
+        
+        .info-text {
+            margin-top: 10px;
+            font-size: 14px;
+            color: var(--gray);
+        }
+        
+        .message {
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            display: none;
+        }
+        
+        .message-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .message-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .access-denied {
+            text-align: center;
+            padding: 50px 30px;
+            display: none;
+        }
+        
+        .access-denied h2 {
+            color: var(--danger);
+            margin-bottom: 20px;
         }
         
         footer {
             text-align: center;
-            margin-top: 40px;
             padding: 20px;
-            color: #9aa0a6;
-            font-size: 0.9rem;
+            color: var(--gray);
+            font-size: 14px;
+            border-top: 1px solid #eee;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 30px;
+        }
+        
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-left-color: var(--primary);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .permission-badge {
+            background: var(--warning);
+            color: var(--dark);
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            margin-left: 10px;
+        }
+        
+        @media (max-width: 768px) {
+            header {
+                flex-direction: column;
+                text-align: center;
+                gap: 20px;
+            }
+            
+            .user-info {
+                margin-top: 10px;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>CringeClan Admin Portal</h1>
-            <p>Exklusive Inhalte für Clan-Mitglieder</p>
+            <div class="logo">
+                <div class="logo-icon">📝</div>
+                <h1>Google Sign-In Text Editor</h1>
+            </div>
+            <div class="user-info" id="user-info" style="display: none;">
+                <img id="user-avatar" class="user-avatar" src="" alt="User Avatar">
+                <div>
+                    <span id="user-name"></span>
+                    <span id="user-role" class="permission-badge"></span>
+                </div>
+                <button id="signout-btn" class="btn btn-secondary">Abmelden</button>
+            </div>
         </header>
         
-        <!-- Anmeldebereich -->
-        <div id="auth-section" class="card auth-card">
-            <h2>Anmeldung erforderlich</h2>
-            <p>Bitte mit Google-Konto anmelden:</p>
+        <div class="signin-section" id="signin-section">
+            <h2>Melde dich mit deinem Google-Konto an</h2>
             <div id="g_id_onload"
-                 data-client_id="302339910588-46kgmvp20bo9buje51kerr6f6oqbbobc.apps.googleusercontent.com"
-                 data-context="signin"
-                 data-ux_mode="popup"
-                 data-callback="handleGoogleSignIn"
-                 data-auto_prompt="false">
+                data-client_id="302339910588-46kgmvp20bo9buje51kerr6f6oqbbobc.apps.googleusercontent.com"
+                data-callback="handleCredentialResponse">
             </div>
-            <div class="g_id_signin"
-                 data-type="standard"
-                 data-shape="rectangular"
-                 data-theme="dark"
-                 data-text="signin_with"
-                 data-size="large"
-                 data-logo_alignment="left">
-            </div>
+            <div class="g_id_signin" data-type="standard"></div>
         </div>
         
-        <!-- Inhaltsbereich -->
-        <div id="content-section" class="hidden">
-            <div class="card content-section">
-                <div id="user-badge" class="badge hidden"></div>
-                
-                <h2>Willkommen, <span id="user-name"></span>!</h2>
-                
-                <div id="displayed-text">
-                    <div class="loader"></div>
-                    <p style="text-align: center; margin-top: 10px;">Lade Inhalt...</p>
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Lade Daten...</p>
+        </div>
+        
+        <div class="message" id="message"></div>
+        
+        <div class="access-denied" id="access-denied">
+            <h2>Zugriff verweigert</h2>
+            <p>Deine E-Mail-Adresse ist nicht in der Whitelist enthalten.</p>
+            <p>Bitte wende dich an den Administrator, um Zugriff zu erhalten.</p>
+        </div>
+        
+        <div class="content-section" id="content-section">
+            <div class="editor-container">
+                <h2 class="section-title">Inhalt bearbeiten</h2>
+                <textarea id="content-editor" placeholder="Hier können Sie den Inhalt bearbeiten..."></textarea>
+                <div style="margin-top: 15px;">
+                    <button id="save-content-btn" class="btn btn-primary">Inhalt speichern</button>
                 </div>
-                
-                <!-- Admin-Bereich -->
-                <div id="admin-panel" class="admin-panel hidden">
-                    <h3>Admin Bereich</h3>
-                    
-                    <!-- Textbearbeitung -->
-                    <div class="text-editor-section">
-                        <h4>Text bearbeiten:</h4>
-                        <textarea id="text-editor" placeholder="Gib hier deinen Text ein..."></textarea>
-                        <button id="update-text">Text aktualisieren</button>
-                        <div id="text-status" class="status-message hidden"></div>
+            </div>
+            
+            <div id="admin-section" style="display: none;">
+                <h2 class="section-title">Admin-Bereich</h2>
+                <div class="whitelist-container">
+                    <div class="whitelist-header">
+                        <h3>Benutzer-Whitelist</h3>
                     </div>
-                    
-                    <!-- Whitelist-Bearbeitung -->
-                    <div class="whitelist-container">
-                        <h4>Whitelist verwalten:</h4>
-                        
-                        <div class="whitelist-section">
-                            <div class="whitelist-box">
-                                <h5>Leser-Whitelist</h5>
-                                <input type="email" id="new-reader" placeholder="E-Mail hinzufügen">
-                                <button id="add-reader">Hinzufügen</button>
-                                <ul id="reader-list" class="whitelist-list"></ul>
-                            </div>
-                            
-                            <div class="whitelist-box">
-                                <h5>Admin-Whitelist</h5>
-                                <input type="email" id="new-admin" placeholder="E-Mail hinzufügen">
-                                <button id="add-admin">Hinzufügen</button>
-                                <ul id="admin-list" class="whitelist-list"></ul>
-                            </div>
-                        </div>
-                        
-                        <div id="whitelist-status" class="status-message hidden"></div>
+                    <p>Füge E-Mail-Adressen hinzu (eine pro Zeile):</p>
+                    <textarea id="user-whitelist" placeholder="user1@example.com&#10;user2@example.com"></textarea>
+                    <p class="info-text">Hinweis: Nur diese Benutzer haben Lesezugriff auf den Inhalt.</p>
+                    <div style="margin-top: 15px;">
+                        <button id="save-whitelist-btn" class="btn btn-secondary">Whitelist speichern</button>
                     </div>
                 </div>
-                
-                <button id="signout-btn" class="logout-btn">Abmelden</button>
             </div>
         </div>
         
         <footer>
-            © 2023 CringeClan | Exklusiv für Clan-Mitglieder
+            <p>&copy; 2023 Protected Content Editor | Nur für autorisierte Benutzer</p>
         </footer>
     </div>
 
     <script>
-        // ================== KONFIGURATION ================== //
-        // JSONBin.io Konfiguration
-        const JSONBIN_BIN_ID = "686675398960c979a5b663ce";
-        const JSONBIN_API_KEY = "$2a$10$BCaAiskamnm/0uZ12lCllOX6MvFKiS9vY8WzxASNqzj8aQTWLTQ86";
-        
-        // Initialer Text
-        const DEFAULT_TEXT = `
-Willkommen auf dem exklusiven CringeClan Portal!
-
-Hier sind die neuesten Clan-Infos:
-
-- "Ich starte meine Karriere als DJ... (absolute Katastrophe)"
-- Nächstes Event: Clan-Turnier am 15. Oktober
-- Neue Mitglieder: 3 Bewerbungen diese Woche
-
-Bleibt dran für Updates!
-        `.trim();
-        
-        // Initiale Whitelists
-        const DEFAULT_READERS = ["leser1@example.com", "leser2@example.com"];
-        const DEFAULT_ADMINS = ["cringealiyt@gmail.com"];
+        // Konfiguration
+        const BIN_ID = '686675398960c979a5b663ce';
+        const MASTER_KEY = '$2a$10$BCaAiskamnm/0uZ12lCllOX6MvFKiS9vY8WzxASNqzj8aQTWLTQ86';
+        const ADMIN_WHITELIST = ['cringealiyt@gmail.com']; // Hier Admin-Emails eintragen
         
         // Globale Variablen
-        let currentUserEmail = "";
-        let isAdmin = false;
-        let readerWhitelist = [];
-        let adminWhitelist = [];
-        let portalContent = "";
-
-        // ================== FUNKTIONEN ================== //
-        // Google Sign-In Handler
-        async function handleGoogleSignIn(response) {
-            const userData = decodeJWT(response.credential);
-            currentUserEmail = userData.email;
+        let currentUser = null;
+        let appData = {
+            content: 'Willkommen zum geschützten Text-Editor!\n\nDies ist ein Beispieltext. Administratoren können diesen Inhalt bearbeiten und festlegen, welche Benutzer Lesezugriff haben.\n\nBitte melden Sie sich mit Ihrem Google-Konto an.',
+            userWhitelist: ['user@example.com']
+        };
+        
+        // Google Sign-In Callback
+        function handleCredentialResponse(response) {
+            // JWT dekodieren
+            const base64Url = response.credential.split('.')[1];
+            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+            const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => {
+                return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+            }).join(''));
             
-            document.getElementById("user-name").textContent = userData.name;
+            const userData = JSON.parse(jsonPayload);
+            currentUser = {
+                name: userData.name,
+                email: userData.email,
+                picture: userData.picture
+            };
             
-            // Whitelists und Content laden
-            await loadPortalData();
+            // UI aktualisieren
+            document.getElementById('signin-section').style.display = 'none';
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('user-info').style.display = 'flex';
+            document.getElementById('user-name').textContent = currentUser.name;
+            document.getElementById('user-avatar').src = currentUser.picture;
             
-            // Berechtigungen prüfen
-            isAdmin = adminWhitelist.includes(currentUserEmail);
-            const isReader = isAdmin || readerWhitelist.includes(currentUserEmail);
-            
-            if (!isReader) {
-                alert("Zugriff verweigert: Deine E-Mail ist nicht berechtigt");
-                return;
-            }
-            
-            // Anzeigen
-            document.getElementById("auth-section").classList.add("hidden");
-            document.getElementById("content-section").classList.remove("hidden");
-            
-            // Badge anzeigen
-            const badge = document.getElementById("user-badge");
-            if (isAdmin) {
-                badge.textContent = "Admin";
-                badge.className = "badge admin-badge";
-                document.getElementById("admin-panel").classList.remove("hidden");
-            } else {
-                badge.textContent = "Leser";
-                badge.className = "badge reader-badge";
-            }
-            badge.classList.remove("hidden");
-            
-            // Content anzeigen
-            document.getElementById("displayed-text").textContent = portalContent;
-            
-            // Editor füllen (nur für Admins)
-            if (isAdmin) {
-                document.getElementById("text-editor").value = portalContent;
-                loadWhitelistUI();
-            }
+            // Berechtigungen prüfen und Daten laden
+            checkPermissionsAndLoadData();
         }
         
-        // Portal-Daten aus JSONBin laden
-        async function loadPortalData() {
+        // Berechtigungen prüfen und Daten laden
+        async function checkPermissionsAndLoadData() {
             try {
-                const response = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/latest`, {
+                // Daten von JSONBin laden
+                const response = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
                     headers: {
-                        "X-Master-Key": JSONBIN_API_KEY,
-                        "X-Bin-Meta": "false"
+                        'X-Master-Key': MASTER_KEY,
+                        'Content-Type': 'application/json'
                     }
                 });
                 
-                if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-                
                 const data = await response.json();
-                
-                // Daten extrahieren
-                portalContent = data.content || DEFAULT_TEXT;
-                readerWhitelist = data.readerWhitelist || DEFAULT_READERS;
-                adminWhitelist = data.adminWhitelist || DEFAULT_ADMINS;
-                
-            } catch (error) {
-                console.error("Fehler beim Laden:", error);
-                portalContent = DEFAULT_TEXT;
-                readerWhitelist = DEFAULT_READERS;
-                adminWhitelist = DEFAULT_ADMINS;
-            }
-        }
-        
-        // Gesamtes Portal-Objekt speichern
-        async function savePortalData() {
-            const portalData = {
-                content: portalContent,
-                readerWhitelist: readerWhitelist,
-                adminWhitelist: adminWhitelist
-            };
-            
-            try {
-                await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`, {
-                    method: "PUT",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "X-Master-Key": JSONBIN_API_KEY,
-                        "X-Bin-Name": "CringeClan Portal Data"
-                    },
-                    body: JSON.stringify(portalData)
-                });
-                return true;
-            } catch (error) {
-                console.error("Fehler beim Speichern:", error);
-                return false;
-            }
-        }
-        
-        // Whitelist-UI laden
-        function loadWhitelistUI() {
-            // Reader-Liste
-            const readerList = document.getElementById("reader-list");
-            readerList.innerHTML = "";
-            readerWhitelist.forEach(email => {
-                const li = document.createElement("li");
-                li.innerHTML = `
-                    ${email}
-                    <button class="btn-danger remove-email" data-type="reader" data-email="${email}">Entfernen</button>
-                `;
-                readerList.appendChild(li);
-            });
-            
-            // Admin-Liste
-            const adminList = document.getElementById("admin-list");
-            adminList.innerHTML = "";
-            adminWhitelist.forEach(email => {
-                const li = document.createElement("li");
-                li.innerHTML = `
-                    ${email}
-                    <button class="btn-danger remove-email" data-type="admin" data-email="${email}">Entfernen</button>
-                `;
-                adminList.appendChild(li);
-            });
-            
-            // Event-Listener für Entfernen-Buttons
-            document.querySelectorAll(".remove-email").forEach(button => {
-                button.addEventListener("click", function() {
-                    const email = this.getAttribute("data-email");
-                    const type = this.getAttribute("data-type");
-                    removeFromWhitelist(email, type);
-                });
-            });
-        }
-        
-        // Text aktualisieren
-        document.getElementById("update-text").addEventListener("click", async () => {
-            portalContent = document.getElementById("text-editor").value;
-            const status = document.getElementById("text-status");
-            
-            if (await savePortalData()) {
-                status.textContent = "Text erfolgreich aktualisiert!";
-                status.className = "status-message success";
-                document.getElementById("displayed-text").textContent = portalContent;
-            } else {
-                status.textContent = "Fehler beim Speichern des Texts!";
-                status.className = "status-message error";
-            }
-            
-            status.classList.remove("hidden");
-            setTimeout(() => status.classList.add("hidden"), 3000);
-        });
-        
-        // Zu Whitelist hinzufügen
-        async function addToWhitelist(email, type) {
-            if (!validateEmail(email)) {
-                showWhitelistStatus("Ungültige E-Mail-Adresse", "error");
-                return;
-            }
-            
-            const list = (type === "reader") ? readerWhitelist : adminWhitelist;
-            
-            if (list.includes(email)) {
-                showWhitelistStatus("E-Mail ist bereits in der Whitelist", "error");
-                return;
-            }
-            
-            list.push(email);
-            
-            if (await savePortalData()) {
-                showWhitelistStatus(`${email} wurde zur ${type}-Whitelist hinzugefügt`, "success");
-                loadWhitelistUI();
-                document.getElementById(`new-${type}`).value = "";
-            } else {
-                showWhitelistStatus("Fehler beim Speichern der Whitelist", "error");
-            }
-        }
-        
-        // Aus Whitelist entfernen
-        async function removeFromWhitelist(email, type) {
-            if (email === "cringealiyt@gmail.com") {
-                showWhitelistStatus("Haupt-Admin kann nicht entfernt werden", "error");
-                return;
-            }
-            
-            const list = (type === "reader") ? readerWhitelist : adminWhitelist;
-            const index = list.indexOf(email);
-            
-            if (index !== -1) {
-                list.splice(index, 1);
-                
-                if (await savePortalData()) {
-                    showWhitelistStatus(`${email} wurde entfernt`, "success");
-                    loadWhitelistUI();
-                } else {
-                    showWhitelistStatus("Fehler beim Speichern der Whitelist", "error");
+                if (data.record) {
+                    appData = data.record;
                 }
+                
+                // Berechtigungen prüfen
+                const isAdmin = ADMIN_WHITELIST.includes(currentUser.email);
+                const isUser = appData.userWhitelist.includes(currentUser.email) || isAdmin;
+                
+                // UI entsprechend der Berechtigungen aktualisieren
+                document.getElementById('loading').style.display = 'none';
+                
+                if (isAdmin || isUser) {
+                    document.getElementById('content-section').style.display = 'block';
+                    document.getElementById('content-editor').value = appData.content;
+                    document.getElementById('user-role').textContent = isAdmin ? 'Admin' : 'Benutzer';
+                    
+                    if (isAdmin) {
+                        document.getElementById('admin-section').style.display = 'block';
+                        document.getElementById('user-whitelist').value = appData.userWhitelist.join('\n');
+                    } else {
+                        document.getElementById('content-editor').readOnly = true;
+                    }
+                } else {
+                    document.getElementById('access-denied').style.display = 'block';
+                }
+            } catch (error) {
+                console.error('Fehler beim Laden der Daten:', error);
+                document.getElementById('loading').style.display = 'none';
+                showMessage('Fehler beim Laden der Daten. Bitte versuche es später erneut.', 'error');
             }
         }
-        
-        // Whitelist-Status anzeigen
-        function showWhitelistStatus(message, type) {
-            const status = document.getElementById("whitelist-status");
-            status.textContent = message;
-            status.className = `status-message ${type}`;
-            status.classList.remove("hidden");
-            setTimeout(() => status.classList.add("hidden"), 3000);
-        }
-        
-        // Helper: E-Mail validieren
-        function validateEmail(email) {
-            return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-        }
-        
-        // Helper: JWT decodieren
-        function decodeJWT(token) {
-            try {
-                const base64Url = token.split('.')[1];
-                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-                const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => 
-                    '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join('');
-                return JSON.parse(jsonPayload);
-            } catch (e) {
-                console.error("Fehler beim Decodieren des Tokens:", e);
-                return {name: "Benutzer", email: "unbekannt@example.com"};
-            }
-        }
-        
-        // Event Listener für Whitelist-Hinzufügen
-        document.getElementById("add-reader").addEventListener("click", () => {
-            addToWhitelist(document.getElementById("new-reader").value.trim(), "reader");
-        });
-        
-        document.getElementById("add-admin").addEventListener("click", () => {
-            addToWhitelist(document.getElementById("new-admin").value.trim(), "admin");
-        });
-        
-        // Enter-Taste für E-Mail-Eingabe
-        document.getElementById("new-reader").addEventListener("keypress", (e) => {
-            if (e.key === "Enter") addToWhitelist(e.target.value.trim(), "reader");
-        });
-        
-        document.getElementById("new-admin").addEventListener("keypress", (e) => {
-            if (e.key === "Enter") addToWhitelist(e.target.value.trim(), "admin");
-        });
         
         // Abmelden
-        document.getElementById("signout-btn").addEventListener("click", () => {
-            document.getElementById("auth-section").classList.remove("hidden");
-            document.getElementById("content-section").classList.add("hidden");
+        document.getElementById('signout-btn').addEventListener('click', () => {
+            google.accounts.id.disableAutoSelect();
+            currentUser = null;
+            document.getElementById('user-info').style.display = 'none';
+            document.getElementById('content-section').style.display = 'none';
+            document.getElementById('access-denied').style.display = 'none';
+            document.getElementById('signin-section').style.display = 'block';
+            document.getElementById('message').style.display = 'none';
         });
+        
+        // Inhalt speichern
+        document.getElementById('save-content-btn').addEventListener('click', async () => {
+            appData.content = document.getElementById('content-editor').value;
+            await saveData();
+        });
+        
+        // Whitelist speichern
+        document.getElementById('save-whitelist-btn').addEventListener('click', async () => {
+            const whitelistText = document.getElementById('user-whitelist').value;
+            appData.userWhitelist = whitelistText
+                .split('\n')
+                .map(email => email.trim())
+                .filter(email => email && validateEmail(email));
+                
+            await saveData();
+        });
+        
+        // Daten speichern
+        async function saveData() {
+            try {
+                document.getElementById('loading').style.display = 'block';
+                
+                const response = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
+                    method: 'PUT',
+                    headers: {
+                        'X-Master-Key': MASTER_KEY,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(appData)
+                });
+                
+                const result = await response.json();
+                if (result.metadata) {
+                    showMessage('Daten erfolgreich gespeichert!', 'success');
+                } else {
+                    throw new Error('Speichern fehlgeschlagen');
+                }
+            } catch (error) {
+                console.error('Fehler beim Speichern der Daten:', error);
+                showMessage('Fehler beim Speichern der Daten. Bitte versuche es erneut.', 'error');
+            } finally {
+                document.getElementById('loading').style.display = 'none';
+            }
+        }
+        
+        // E-Mail validieren
+        function validateEmail(email) {
+            const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return re.test(email);
+        }
+        
+        // Nachricht anzeigen
+        function showMessage(text, type) {
+            const messageElement = document.getElementById('message');
+            messageElement.textContent = text;
+            messageElement.className = 'message ' + (type === 'success' ? 'message-success' : 'message-error');
+            messageElement.style.display = 'block';
+            
+            // Nachricht nach 5 Sekunden ausblenden
+            setTimeout(() => {
+                messageElement.style.display = 'none';
+            }, 5000);
+        }
     </script>
 </body>
 </html>
