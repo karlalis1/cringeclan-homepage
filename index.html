@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CringeClan - Admin Dashboard</title>
+    <title>CringeClan - Exklusiv-Blog</title>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <style>
         :root {
@@ -13,8 +13,6 @@
             --text: #e8eaed;
             --border: #5f6368;
             --admin-accent: #fbbc04;
-            --success: #81c995;
-            --error: #f28b82;
         }
         
         body {
@@ -47,25 +45,20 @@
             border: 2px solid var(--admin-accent);
         }
         
-        .admin-section {
+        .admin-only {
             background: rgba(251, 188, 4, 0.1);
             padding: 15px;
             border-left: 3px solid var(--admin-accent);
             margin: 15px 0;
         }
         
-        button, input, textarea {
+        button, textarea {
             background: var(--card-bg);
             color: var(--text);
             border: 1px solid var(--border);
             padding: 8px 15px;
             margin: 5px 0;
             border-radius: 4px;
-        }
-        
-        button {
-            cursor: pointer;
-            transition: all 0.2s;
         }
         
         button:hover {
@@ -78,33 +71,9 @@
             min-height: 100px;
         }
         
-        #whitelist-list {
-            margin: 10px 0;
-            padding: 0;
-            list-style-type: none;
-        }
-        
-        #whitelist-list li {
-            display: flex;
-            justify-content: space-between;
-            padding: 8px;
-            border-bottom: 1px solid var(--border);
-        }
-        
-        .status-message {
-            padding: 10px;
-            margin: 10px 0;
-            border-radius: 4px;
-        }
-        
-        .success {
-            background-color: var(--success);
-            color: #202124;
-        }
-        
-        .error {
-            background-color: var(--error);
-            color: white;
+        #blog-content {
+            padding: 15px;
+            line-height: 1.8;
         }
     </style>
 </head>
@@ -112,7 +81,7 @@
     <div class="container">
         <!-- Anmeldebereich -->
         <div id="auth-section" class="card">
-            <h1>CringeClan Admin Dashboard</h1>
+            <h1>CringeClan Exklusiv-Blog</h1>
             <div id="g_id_onload"
                  data-client_id="302339910588-46kgmvp20bo9buje51kerr6f6oqbbobc.apps.googleusercontent.com"
                  data-context="signin"
@@ -134,37 +103,25 @@
         <div id="content-section" class="hidden">
             <div class="card">
                 <h2>Willkommen, <span id="user-name"></span>!</h2>
-                <p>E-Mail: <span id="user-email"></span></p>
                 <button id="signout-btn">Abmelden</button>
             </div>
             
-            <!-- Öffentlicher Inhalt -->
-            <div id="public-content" class="card">
-                <h3>Clan News</h3>
+            <!-- Blog-Inhalt für alle Whitelist-Mitglieder -->
+            <div class="card">
+                <h3>Exklusive Clan-Updates</h3>
                 <div id="blog-content">
                     Lade Inhalte...
                 </div>
             </div>
             
-            <!-- Admin-Bereich -->
+            <!-- Nur für Admin sichtbar -->
             <div id="admin-panel" class="card hidden">
                 <h3><span style="color:var(--admin-accent)">🔧 ADMIN-BEREICH</span></h3>
-                
-                <div class="admin-section">
-                    <h4>Blog Editor</h4>
+                <div class="admin-only">
+                    <h4>Blog bearbeiten:</h4>
                     <textarea id="blog-editor"></textarea>
                     <button id="save-blog">Speichern</button>
-                    <div id="blog-status" class="status-message hidden"></div>
-                </div>
-                
-                <div class="admin-section">
-                    <h4>Whitelist Management</h4>
-                    <input type="email" id="new-email" placeholder="Neue E-Mail hinzufügen">
-                    <button id="add-email">Hinzufügen</button>
-                    <div id="whitelist-status" class="status-message hidden"></div>
-                    
-                    <h5>Aktuelle Whitelist:</h5>
-                    <ul id="whitelist-list"></ul>
+                    <p id="save-status"></p>
                 </div>
             </div>
         </div>
@@ -194,6 +151,14 @@
             document.getElementById("user-name").textContent = userData.name;
             document.getElementById("user-email").textContent = userEmail;
             
+            // Whitelist prüfen
+            const whitelist = getWhitelist();
+            if (!whitelist.includes(userEmail)) {
+                alert("Zugriff verweigert: Deine E-Mail ist nicht in der Whitelist");
+                return;
+            }
+            
+            // Anzeigen
             document.getElementById("auth-section").classList.add("hidden");
             document.getElementById("content-section").classList.remove("hidden");
             
@@ -201,7 +166,6 @@
             if (userEmail === ADMIN_EMAIL) {
                 document.getElementById("admin-panel").classList.remove("hidden");
                 loadBlogEditor();
-                loadWhitelist();
             }
             
             loadBlogContent();
@@ -213,35 +177,12 @@
             document.getElementById("blog-content").innerHTML = savedContent;
         }
         
-        // Editor laden
+        // Editor laden (nur für Admin)
         function loadBlogEditor() {
             const savedContent = localStorage.getItem(BLOG_STORAGE_KEY) || DEFAULT_BLOG_CONTENT;
             document.getElementById("blog-editor").value = savedContent
                 .replace(/<br\s*\/?>/gi, "\n")
                 .replace(/<[^>]*>/g, "");
-        }
-        
-        // Whitelist laden
-        function loadWhitelist() {
-            const whitelist = getWhitelist();
-            const listElement = document.getElementById("whitelist-list");
-            listElement.innerHTML = "";
-            
-            whitelist.forEach(email => {
-                const li = document.createElement("li");
-                li.innerHTML = `
-                    ${email}
-                    ${email !== ADMIN_EMAIL ? `<button class="remove-email" data-email="${email}">Entfernen</button>` : ''}
-                `;
-                listElement.appendChild(li);
-            });
-            
-            // Event Listener für Remove-Buttons
-            document.querySelectorAll(".remove-email").forEach(button => {
-                button.addEventListener("click", function() {
-                    removeFromWhitelist(this.getAttribute("data-email"));
-                });
-            });
         }
         
         // Whitelist aus Storage holen
@@ -250,58 +191,14 @@
             return stored ? JSON.parse(stored) : DEFAULT_WHITELIST;
         }
         
-        // Zur Whitelist hinzufügen
-        function addToWhitelist(email) {
-            if (!validateEmail(email)) {
-                showStatus("whitelist-status", "Ungültige E-Mail-Adresse", "error");
-                return;
-            }
-            
-            const whitelist = getWhitelist();
-            if (whitelist.includes(email)) {
-                showStatus("whitelist-status", "E-Mail ist bereits in der Whitelist", "error");
-                return;
-            }
-            
-            whitelist.push(email);
-            localStorage.setItem(WHITELIST_STORAGE_KEY, JSON.stringify(whitelist));
-            loadWhitelist();
-            document.getElementById("new-email").value = "";
-            showStatus("whitelist-status", `${email} wurde zur Whitelist hinzugefügt`, "success");
-        }
-        
-        // Von Whitelist entfernen
-        function removeFromWhitelist(email) {
-            if (email === ADMIN_EMAIL) return;
-            
-            const whitelist = getWhitelist();
-            const updated = whitelist.filter(e => e !== email);
-            localStorage.setItem(WHITELIST_STORAGE_KEY, JSON.stringify(updated));
-            loadWhitelist();
-            showStatus("whitelist-status", `${email} wurde entfernt`, "success");
-        }
-        
-        // Blog speichern
-        function saveBlog() {
+        // Blog speichern (nur Admin)
+        document.getElementById("save-blog").addEventListener("click", () => {
             const content = document.getElementById("blog-editor").value;
             localStorage.setItem(BLOG_STORAGE_KEY, formatAsHtml(content));
+            document.getElementById("save-status").textContent = "Gespeichert!";
             loadBlogContent();
-            showStatus("blog-status", "Blog erfolgreich aktualisiert!", "success");
-        }
-        
-        // Helper: E-Mail validieren
-        function validateEmail(email) {
-            return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-        }
-        
-        // Helper: Statusmeldung anzeigen
-        function showStatus(elementId, message, type) {
-            const element = document.getElementById(elementId);
-            element.textContent = message;
-            element.className = `status-message ${type}`;
-            element.classList.remove("hidden");
-            setTimeout(() => element.classList.add("hidden"), 3000);
-        }
+            setTimeout(() => document.getElementById("save-status").textContent = "", 2000);
+        });
         
         // Helper: Text zu HTML formatieren
         function formatAsHtml(text) {
@@ -319,19 +216,6 @@
                 '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
             return JSON.parse(jsonPayload);
         }
-        
-        // Event Listener
-        document.getElementById("save-blog").addEventListener("click", saveBlog);
-        document.getElementById("add-email").addEventListener("click", () => {
-            addToWhitelist(document.getElementById("new-email").value.trim());
-        });
-        
-        // Enter-Taste für E-Mail-Eingabe
-        document.getElementById("new-email").addEventListener("keypress", (e) => {
-            if (e.key === "Enter") {
-                addToWhitelist(e.target.value.trim());
-            }
-        });
         
         // Abmelden
         document.getElementById("signout-btn").addEventListener("click", () => {
