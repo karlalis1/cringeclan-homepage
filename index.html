@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CringeClan Portal</title>
+    <title>CringeClan Admin Portal</title>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <style>
         :root {
@@ -14,6 +14,8 @@
             --border: #5f6368;
             --admin-accent: #fbbc04;
             --reader-accent: #81c995;
+            --success: #81c995;
+            --error: #f28b82;
         }
         
         * {
@@ -74,28 +76,24 @@
             position: relative;
         }
         
-        .admin-badge {
+        .badge {
             position: absolute;
             top: 15px;
             right: 15px;
-            background: var(--admin-accent);
-            color: #202124;
             padding: 5px 10px;
             border-radius: 20px;
             font-size: 0.8rem;
             font-weight: bold;
         }
         
+        .admin-badge {
+            background: var(--admin-accent);
+            color: #202124;
+        }
+        
         .reader-badge {
-            position: absolute;
-            top: 15px;
-            right: 15px;
             background: var(--reader-accent);
             color: #202124;
-            padding: 5px 10px;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            font-weight: bold;
         }
         
         #displayed-text {
@@ -109,15 +107,14 @@
             min-height: 200px;
         }
         
-        .editor-panel {
+        .admin-panel {
             margin-top: 30px;
             padding-top: 20px;
             border-top: 1px solid var(--border);
         }
         
-        textarea {
+        textarea, input {
             width: 100%;
-            min-height: 200px;
             background: rgba(0,0,0,0.2);
             color: var(--text);
             border: 1px solid var(--border);
@@ -125,8 +122,12 @@
             padding: 15px;
             font-size: 1rem;
             font-family: inherit;
-            resize: vertical;
             margin-bottom: 15px;
+        }
+        
+        textarea {
+            min-height: 200px;
+            resize: vertical;
         }
         
         button {
@@ -139,11 +140,16 @@
             cursor: pointer;
             transition: all 0.3s;
             font-size: 1rem;
+            margin-right: 10px;
         }
         
         button:hover {
             opacity: 0.9;
             transform: translateY(-2px);
+        }
+        
+        .btn-danger {
+            background: #f28b82;
         }
         
         .logout-btn {
@@ -154,18 +160,17 @@
         
         .status-message {
             padding: 10px;
-            margin-top: 15px;
+            margin: 15px 0;
             border-radius: 8px;
-            background: rgba(251, 188, 4, 0.2);
             text-align: center;
         }
         
         .success {
-            background-color: rgba(129, 201, 149, 0.3) !important;
+            background-color: rgba(129, 201, 149, 0.3);
         }
         
         .error {
-            background-color: rgba(242, 139, 130, 0.3) !important;
+            background-color: rgba(242, 139, 130, 0.3);
         }
         
         .loader {
@@ -183,6 +188,38 @@
             100% { transform: rotate(360deg); }
         }
         
+        .whitelist-container {
+            margin-top: 30px;
+        }
+        
+        .whitelist-section {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .whitelist-box {
+            flex: 1;
+            padding: 15px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+        }
+        
+        .whitelist-list {
+            margin: 10px 0;
+            padding: 0;
+            list-style-type: none;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .whitelist-list li {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px;
+            border-bottom: 1px solid var(--border);
+        }
+        
         footer {
             text-align: center;
             margin-top: 40px;
@@ -195,7 +232,7 @@
 <body>
     <div class="container">
         <header>
-            <h1>CringeClan Portal</h1>
+            <h1>CringeClan Admin Portal</h1>
             <p>Exklusive Inhalte für Clan-Mitglieder</p>
         </header>
         
@@ -223,7 +260,7 @@
         <!-- Inhaltsbereich -->
         <div id="content-section" class="hidden">
             <div class="card content-section">
-                <div id="user-badge" class="admin-badge hidden">Admin</div>
+                <div id="user-badge" class="badge hidden"></div>
                 
                 <h2>Willkommen, <span id="user-name"></span>!</h2>
                 
@@ -232,12 +269,40 @@
                     <p style="text-align: center; margin-top: 10px;">Lade Inhalt...</p>
                 </div>
                 
-                <!-- Editor nur für Admins -->
-                <div id="editor-panel" class="editor-panel hidden">
-                    <h3>Text bearbeiten:</h3>
-                    <textarea id="text-editor" placeholder="Gib hier deinen Text ein..."></textarea>
-                    <button id="update-text">Text aktualisieren</button>
-                    <div id="status-message" class="status-message hidden"></div>
+                <!-- Admin-Bereich -->
+                <div id="admin-panel" class="admin-panel hidden">
+                    <h3>Admin Bereich</h3>
+                    
+                    <!-- Textbearbeitung -->
+                    <div class="text-editor-section">
+                        <h4>Text bearbeiten:</h4>
+                        <textarea id="text-editor" placeholder="Gib hier deinen Text ein..."></textarea>
+                        <button id="update-text">Text aktualisieren</button>
+                        <div id="text-status" class="status-message hidden"></div>
+                    </div>
+                    
+                    <!-- Whitelist-Bearbeitung -->
+                    <div class="whitelist-container">
+                        <h4>Whitelist verwalten:</h4>
+                        
+                        <div class="whitelist-section">
+                            <div class="whitelist-box">
+                                <h5>Leser-Whitelist</h5>
+                                <input type="email" id="new-reader" placeholder="E-Mail hinzufügen">
+                                <button id="add-reader">Hinzufügen</button>
+                                <ul id="reader-list" class="whitelist-list"></ul>
+                            </div>
+                            
+                            <div class="whitelist-box">
+                                <h5>Admin-Whitelist</h5>
+                                <input type="email" id="new-admin" placeholder="E-Mail hinzufügen">
+                                <button id="add-admin">Hinzufügen</button>
+                                <ul id="admin-list" class="whitelist-list"></ul>
+                            </div>
+                        </div>
+                        
+                        <div id="whitelist-status" class="status-message hidden"></div>
+                    </div>
                 </div>
                 
                 <button id="signout-btn" class="logout-btn">Abmelden</button>
@@ -251,15 +316,9 @@
 
     <script>
         // ================== KONFIGURATION ================== //
-        // Whitelists
-        const READER_WHITELIST = [
-            "leser1@example.com",
-            "leser2@example.com"
-        ];
-        
-        const ADMIN_WHITELIST = [
-            "cringealiyt@gmail.com"
-        ];
+        // JSONBin.io Konfiguration
+        const JSONBIN_BIN_ID = "686675398960c979a5b663ce";
+        const JSONBIN_API_KEY = "$2a$10$BCaAiskamnm/0uZ12lCllOX6MvFKiS9vY8WzxASNqzj8aQTWLTQ86";
         
         // Initialer Text
         const DEFAULT_TEXT = `
@@ -274,21 +333,31 @@ Hier sind die neuesten Clan-Infos:
 Bleibt dran für Updates!
         `.trim();
         
-        // JSONBin.io Konfiguration
-        const JSONBIN_BIN_ID = "686675398960c979a5b663ce";  // Deine Bin-ID
-        const JSONBIN_API_KEY = "$2a$10$BCaAiskamnm/0uZ12lCllOX6MvFKiS9vY8WzxASNqzj8aQTWLTQ86";  // HIER DEIN API KEY EINTRAGEN!
+        // Initiale Whitelists
+        const DEFAULT_READERS = ["leser1@example.com", "leser2@example.com"];
+        const DEFAULT_ADMINS = ["cringealiyt@gmail.com"];
         
+        // Globale Variablen
+        let currentUserEmail = "";
+        let isAdmin = false;
+        let readerWhitelist = [];
+        let adminWhitelist = [];
+        let portalContent = "";
+
         // ================== FUNKTIONEN ================== //
         // Google Sign-In Handler
         async function handleGoogleSignIn(response) {
             const userData = decodeJWT(response.credential);
-            const userEmail = userData.email;
+            currentUserEmail = userData.email;
             
             document.getElementById("user-name").textContent = userData.name;
             
+            // Whitelists und Content laden
+            await loadPortalData();
+            
             // Berechtigungen prüfen
-            let isAdmin = ADMIN_WHITELIST.includes(userEmail);
-            let isReader = isAdmin || READER_WHITELIST.includes(userEmail);
+            isAdmin = adminWhitelist.includes(currentUserEmail);
+            const isReader = isAdmin || readerWhitelist.includes(currentUserEmail);
             
             if (!isReader) {
                 alert("Zugriff verweigert: Deine E-Mail ist nicht berechtigt");
@@ -302,24 +371,27 @@ Bleibt dran für Updates!
             // Badge anzeigen
             const badge = document.getElementById("user-badge");
             if (isAdmin) {
-                badge.classList.remove("hidden");
                 badge.textContent = "Admin";
-                document.getElementById("editor-panel").classList.remove("hidden");
+                badge.className = "badge admin-badge";
+                document.getElementById("admin-panel").classList.remove("hidden");
             } else {
-                badge.classList.remove("hidden");
                 badge.textContent = "Leser";
-                badge.classList.add("reader-badge");
-                badge.classList.remove("admin-badge");
+                badge.className = "badge reader-badge";
             }
+            badge.classList.remove("hidden");
             
-            // Text aus JSONBin laden
-            await loadTextContent();
+            // Content anzeigen
+            document.getElementById("displayed-text").textContent = portalContent;
+            
+            // Editor füllen (nur für Admins)
+            if (isAdmin) {
+                document.getElementById("text-editor").value = portalContent;
+                loadWhitelistUI();
+            }
         }
         
-        // Text aus JSONBin laden
-        async function loadTextContent() {
-            const status = document.getElementById("status-message");
-            
+        // Portal-Daten aus JSONBin laden
+        async function loadPortalData() {
             try {
                 const response = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/latest`, {
                     headers: {
@@ -328,87 +400,162 @@ Bleibt dran für Updates!
                     }
                 });
                 
-                if (!response.ok) {
-                    throw new Error(`HTTP error! Status: ${response.status}`);
-                }
+                if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
                 
                 const data = await response.json();
-                const content = data.record?.content || DEFAULT_TEXT;
                 
-                document.getElementById("displayed-text").textContent = content;
-                
-                // Editor füllen (nur für Admins)
-                if (document.getElementById("editor-panel").classList.contains("hidden") === false) {
-                    document.getElementById("text-editor").value = content;
-                }
+                // Daten extrahieren
+                portalContent = data.content || DEFAULT_TEXT;
+                readerWhitelist = data.readerWhitelist || DEFAULT_READERS;
+                adminWhitelist = data.adminWhitelist || DEFAULT_ADMINS;
                 
             } catch (error) {
                 console.error("Fehler beim Laden:", error);
-                document.getElementById("displayed-text").innerHTML = `
-                    <div style="color: #f28b82; text-align: center;">
-                        <p>Fehler beim Laden des Inhalts.</p>
-                        <p>${error.message}</p>
-                        <p>Standardtext wird angezeigt.</p>
-                    </div>
-                    <div style="margin-top: 20px;">${DEFAULT_TEXT}</div>
-                `;
-                
-                // Fehler anzeigen
-                if (JSONBIN_API_KEY === "DEIN_API_KEY") {
-                    status.textContent = "FEHLER: Du musst deinen JSONBin.io API Key eintragen!";
-                    status.classList.remove("hidden");
-                    status.classList.add("error");
-                }
+                portalContent = DEFAULT_TEXT;
+                readerWhitelist = DEFAULT_READERS;
+                adminWhitelist = DEFAULT_ADMINS;
             }
         }
         
-        // Text in JSONBin aktualisieren
-        document.getElementById("update-text").addEventListener("click", async () => {
-            const newText = document.getElementById("text-editor").value;
-            const status = document.getElementById("status-message");
+        // Gesamtes Portal-Objekt speichern
+        async function savePortalData() {
+            const portalData = {
+                content: portalContent,
+                readerWhitelist: readerWhitelist,
+                adminWhitelist: adminWhitelist
+            };
             
             try {
-                // Update zu JSONBin senden
-                const response = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`, {
+                await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`, {
                     method: "PUT",
                     headers: {
                         "Content-Type": "application/json",
                         "X-Master-Key": JSONBIN_API_KEY,
-                        "X-Bin-Name": "CringeClan Portal Content"
+                        "X-Bin-Name": "CringeClan Portal Data"
                     },
-                    body: JSON.stringify({ content: newText })
+                    body: JSON.stringify(portalData)
                 });
-                
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.message || "Unbekannter Fehler");
-                }
-                
-                // Erfolgsmeldung
-                status.textContent = "Text erfolgreich aktualisiert!";
-                status.classList.remove("hidden");
-                status.classList.add("success");
-                
-                // Text sofort aktualisieren
-                document.getElementById("displayed-text").textContent = newText;
-                
+                return true;
             } catch (error) {
                 console.error("Fehler beim Speichern:", error);
-                status.textContent = `Fehler beim Speichern: ${error.message}`;
-                status.classList.remove("hidden");
-                status.classList.add("error");
-                
-                if (JSONBIN_API_KEY === "DEIN_API_KEY") {
-                    status.textContent = "FEHLER: Du musst deinen JSONBin.io API Key eintragen!";
-                }
+                return false;
+            }
+        }
+        
+        // Whitelist-UI laden
+        function loadWhitelistUI() {
+            // Reader-Liste
+            const readerList = document.getElementById("reader-list");
+            readerList.innerHTML = "";
+            readerWhitelist.forEach(email => {
+                const li = document.createElement("li");
+                li.innerHTML = `
+                    ${email}
+                    <button class="btn-danger remove-email" data-type="reader" data-email="${email}">Entfernen</button>
+                `;
+                readerList.appendChild(li);
+            });
+            
+            // Admin-Liste
+            const adminList = document.getElementById("admin-list");
+            adminList.innerHTML = "";
+            adminWhitelist.forEach(email => {
+                const li = document.createElement("li");
+                li.innerHTML = `
+                    ${email}
+                    <button class="btn-danger remove-email" data-type="admin" data-email="${email}">Entfernen</button>
+                `;
+                adminList.appendChild(li);
+            });
+            
+            // Event-Listener für Entfernen-Buttons
+            document.querySelectorAll(".remove-email").forEach(button => {
+                button.addEventListener("click", function() {
+                    const email = this.getAttribute("data-email");
+                    const type = this.getAttribute("data-type");
+                    removeFromWhitelist(email, type);
+                });
+            });
+        }
+        
+        // Text aktualisieren
+        document.getElementById("update-text").addEventListener("click", async () => {
+            portalContent = document.getElementById("text-editor").value;
+            const status = document.getElementById("text-status");
+            
+            if (await savePortalData()) {
+                status.textContent = "Text erfolgreich aktualisiert!";
+                status.className = "status-message success";
+                document.getElementById("displayed-text").textContent = portalContent;
+            } else {
+                status.textContent = "Fehler beim Speichern des Texts!";
+                status.className = "status-message error";
             }
             
-            // Meldung nach 5 Sekunden ausblenden
-            setTimeout(() => {
-                status.classList.add("hidden");
-                status.classList.remove("success", "error");
-            }, 5000);
+            status.classList.remove("hidden");
+            setTimeout(() => status.classList.add("hidden"), 3000);
         });
+        
+        // Zu Whitelist hinzufügen
+        async function addToWhitelist(email, type) {
+            if (!validateEmail(email)) {
+                showWhitelistStatus("Ungültige E-Mail-Adresse", "error");
+                return;
+            }
+            
+            const list = (type === "reader") ? readerWhitelist : adminWhitelist;
+            
+            if (list.includes(email)) {
+                showWhitelistStatus("E-Mail ist bereits in der Whitelist", "error");
+                return;
+            }
+            
+            list.push(email);
+            
+            if (await savePortalData()) {
+                showWhitelistStatus(`${email} wurde zur ${type}-Whitelist hinzugefügt`, "success");
+                loadWhitelistUI();
+                document.getElementById(`new-${type}`).value = "";
+            } else {
+                showWhitelistStatus("Fehler beim Speichern der Whitelist", "error");
+            }
+        }
+        
+        // Aus Whitelist entfernen
+        async function removeFromWhitelist(email, type) {
+            if (email === "cringealiyt@gmail.com") {
+                showWhitelistStatus("Haupt-Admin kann nicht entfernt werden", "error");
+                return;
+            }
+            
+            const list = (type === "reader") ? readerWhitelist : adminWhitelist;
+            const index = list.indexOf(email);
+            
+            if (index !== -1) {
+                list.splice(index, 1);
+                
+                if (await savePortalData()) {
+                    showWhitelistStatus(`${email} wurde entfernt`, "success");
+                    loadWhitelistUI();
+                } else {
+                    showWhitelistStatus("Fehler beim Speichern der Whitelist", "error");
+                }
+            }
+        }
+        
+        // Whitelist-Status anzeigen
+        function showWhitelistStatus(message, type) {
+            const status = document.getElementById("whitelist-status");
+            status.textContent = message;
+            status.className = `status-message ${type}`;
+            status.classList.remove("hidden");
+            setTimeout(() => status.classList.add("hidden"), 3000);
+        }
+        
+        // Helper: E-Mail validieren
+        function validateEmail(email) {
+            return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+        }
         
         // Helper: JWT decodieren
         function decodeJWT(token) {
@@ -423,6 +570,24 @@ Bleibt dran für Updates!
                 return {name: "Benutzer", email: "unbekannt@example.com"};
             }
         }
+        
+        // Event Listener für Whitelist-Hinzufügen
+        document.getElementById("add-reader").addEventListener("click", () => {
+            addToWhitelist(document.getElementById("new-reader").value.trim(), "reader");
+        });
+        
+        document.getElementById("add-admin").addEventListener("click", () => {
+            addToWhitelist(document.getElementById("new-admin").value.trim(), "admin");
+        });
+        
+        // Enter-Taste für E-Mail-Eingabe
+        document.getElementById("new-reader").addEventListener("keypress", (e) => {
+            if (e.key === "Enter") addToWhitelist(e.target.value.trim(), "reader");
+        });
+        
+        document.getElementById("new-admin").addEventListener("keypress", (e) => {
+            if (e.key === "Enter") addToWhitelist(e.target.value.trim(), "admin");
+        });
         
         // Abmelden
         document.getElementById("signout-btn").addEventListener("click", () => {
