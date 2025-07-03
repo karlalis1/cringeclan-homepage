@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CringeClan Blog</title>
+    <title>CringeClan - Admin Dashboard</title>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <style>
         :root {
@@ -12,6 +12,9 @@
             --card-bg: #303134;
             --text: #e8eaed;
             --border: #5f6368;
+            --admin-accent: #fbbc04;
+            --success: #81c995;
+            --error: #f28b82;
         }
         
         body {
@@ -40,6 +43,17 @@
             display: none;
         }
         
+        #admin-panel {
+            border: 2px solid var(--admin-accent);
+        }
+        
+        .admin-section {
+            background: rgba(251, 188, 4, 0.1);
+            padding: 15px;
+            border-left: 3px solid var(--admin-accent);
+            margin: 15px 0;
+        }
+        
         button, input, textarea {
             background: var(--card-bg);
             color: var(--text);
@@ -47,6 +61,11 @@
             padding: 8px 15px;
             margin: 5px 0;
             border-radius: 4px;
+        }
+        
+        button {
+            cursor: pointer;
+            transition: all 0.2s;
         }
         
         button:hover {
@@ -59,8 +78,33 @@
             min-height: 100px;
         }
         
-        .password-form {
-            margin-top: 20px;
+        #whitelist-list {
+            margin: 10px 0;
+            padding: 0;
+            list-style-type: none;
+        }
+        
+        #whitelist-list li {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .status-message {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        
+        .success {
+            background-color: var(--success);
+            color: #202124;
+        }
+        
+        .error {
+            background-color: var(--error);
+            color: white;
         }
     </style>
 </head>
@@ -68,7 +112,7 @@
     <div class="container">
         <!-- Anmeldebereich -->
         <div id="auth-section" class="card">
-            <h1>CringeClan Blog</h1>
+            <h1>CringeClan Admin Dashboard</h1>
             <div id="g_id_onload"
                  data-client_id="302339910588-46kgmvp20bo9buje51kerr6f6oqbbobc.apps.googleusercontent.com"
                  data-context="signin"
@@ -90,38 +134,47 @@
         <div id="content-section" class="hidden">
             <div class="card">
                 <h2>Willkommen, <span id="user-name"></span>!</h2>
+                <p>E-Mail: <span id="user-email"></span></p>
                 <button id="signout-btn">Abmelden</button>
-                
-                <!-- Passwort-Eingabe für Admin -->
-                <div id="password-form" class="password-form hidden">
-                    <input type="password" id="admin-password" placeholder="Admin-Passwort">
-                    <button id="login-admin">Als Admin anmelden</button>
-                    <p id="password-status"></p>
-                </div>
             </div>
             
-            <!-- Blog-Inhalt für alle -->
-            <div class="card">
+            <!-- Öffentlicher Inhalt -->
+            <div id="public-content" class="card">
                 <h3>Clan News</h3>
                 <div id="blog-content">
                     Lade Inhalte...
                 </div>
             </div>
             
-            <!-- Admin-Bereich (nur mit Passwort) -->
+            <!-- Admin-Bereich -->
             <div id="admin-panel" class="card hidden">
-                <h3>Admin Bereich</h3>
-                <textarea id="blog-editor"></textarea>
-                <button id="save-blog">Speichern</button>
-                <p id="save-status"></p>
+                <h3><span style="color:var(--admin-accent)">🔧 ADMIN-BEREICH</span></h3>
+                
+                <div class="admin-section">
+                    <h4>Blog Editor</h4>
+                    <textarea id="blog-editor"></textarea>
+                    <button id="save-blog">Speichern</button>
+                    <div id="blog-status" class="status-message hidden"></div>
+                </div>
+                
+                <div class="admin-section">
+                    <h4>Whitelist Management</h4>
+                    <input type="email" id="new-email" placeholder="Neue E-Mail hinzufügen">
+                    <button id="add-email">Hinzufügen</button>
+                    <div id="whitelist-status" class="status-message hidden"></div>
+                    
+                    <h5>Aktuelle Whitelist:</h5>
+                    <ul id="whitelist-list"></ul>
+                </div>
             </div>
         </div>
     </div>
 
     <script>
         // Konfiguration
-        const ADMIN_PASSWORD = "Can_3264";
+        const ADMIN_EMAIL = "cringealiyt@gmail.com";
         const BLOG_STORAGE_KEY = "cringeclan_blog_content";
+        const WHITELIST_STORAGE_KEY = "cringeclan_whitelist";
         
         // Initialer Blog-Inhalt
         const DEFAULT_BLOG_CONTENT = `
@@ -129,19 +182,27 @@
             <p>"Ich starte meine Karriere als DJ... (absolute Katastrophe)"</p>
             <p>Letzte Woche habe ich aus Versehen den Hauptstrom abgeschaltet. Nicht mein stolzester Moment.</p>
         `;
+        
+        // Initiale Whitelist
+        const DEFAULT_WHITELIST = [ADMIN_EMAIL];
 
         // Google Sign-In Handler
         function handleGoogleSignIn(response) {
             const userData = decodeJWT(response.credential);
+            const userEmail = userData.email;
             
             document.getElementById("user-name").textContent = userData.name;
-            document.getElementById("user-email").textContent = userData.email;
+            document.getElementById("user-email").textContent = userEmail;
             
             document.getElementById("auth-section").classList.add("hidden");
             document.getElementById("content-section").classList.remove("hidden");
             
-            // Passwort-Formular anzeigen
-            document.getElementById("password-form").classList.remove("hidden");
+            // Admin-Check
+            if (userEmail === ADMIN_EMAIL) {
+                document.getElementById("admin-panel").classList.remove("hidden");
+                loadBlogEditor();
+                loadWhitelist();
+            }
             
             loadBlogContent();
         }
@@ -152,34 +213,94 @@
             document.getElementById("blog-content").innerHTML = savedContent;
         }
         
-        // Admin-Login
-        document.getElementById("login-admin").addEventListener("click", () => {
-            const password = document.getElementById("admin-password").value;
-            
-            if (password === ADMIN_PASSWORD) {
-                document.getElementById("admin-panel").classList.remove("hidden");
-                document.getElementById("password-form").classList.add("hidden");
-                loadBlogEditor();
-            } else {
-                document.getElementById("password-status").textContent = "Falsches Passwort!";
-            }
-        });
-        
-        // Blog speichern
-        document.getElementById("save-blog").addEventListener("click", () => {
-            const content = document.getElementById("blog-editor").value;
-            localStorage.setItem(BLOG_STORAGE_KEY, formatAsHtml(content));
-            document.getElementById("save-status").textContent = "Gespeichert!";
-            loadBlogContent();
-            setTimeout(() => document.getElementById("save-status").textContent = "", 2000);
-        });
-        
         // Editor laden
         function loadBlogEditor() {
             const savedContent = localStorage.getItem(BLOG_STORAGE_KEY) || DEFAULT_BLOG_CONTENT;
             document.getElementById("blog-editor").value = savedContent
                 .replace(/<br\s*\/?>/gi, "\n")
                 .replace(/<[^>]*>/g, "");
+        }
+        
+        // Whitelist laden
+        function loadWhitelist() {
+            const whitelist = getWhitelist();
+            const listElement = document.getElementById("whitelist-list");
+            listElement.innerHTML = "";
+            
+            whitelist.forEach(email => {
+                const li = document.createElement("li");
+                li.innerHTML = `
+                    ${email}
+                    ${email !== ADMIN_EMAIL ? `<button class="remove-email" data-email="${email}">Entfernen</button>` : ''}
+                `;
+                listElement.appendChild(li);
+            });
+            
+            // Event Listener für Remove-Buttons
+            document.querySelectorAll(".remove-email").forEach(button => {
+                button.addEventListener("click", function() {
+                    removeFromWhitelist(this.getAttribute("data-email"));
+                });
+            });
+        }
+        
+        // Whitelist aus Storage holen
+        function getWhitelist() {
+            const stored = localStorage.getItem(WHITELIST_STORAGE_KEY);
+            return stored ? JSON.parse(stored) : DEFAULT_WHITELIST;
+        }
+        
+        // Zur Whitelist hinzufügen
+        function addToWhitelist(email) {
+            if (!validateEmail(email)) {
+                showStatus("whitelist-status", "Ungültige E-Mail-Adresse", "error");
+                return;
+            }
+            
+            const whitelist = getWhitelist();
+            if (whitelist.includes(email)) {
+                showStatus("whitelist-status", "E-Mail ist bereits in der Whitelist", "error");
+                return;
+            }
+            
+            whitelist.push(email);
+            localStorage.setItem(WHITELIST_STORAGE_KEY, JSON.stringify(whitelist));
+            loadWhitelist();
+            document.getElementById("new-email").value = "";
+            showStatus("whitelist-status", `${email} wurde zur Whitelist hinzugefügt`, "success");
+        }
+        
+        // Von Whitelist entfernen
+        function removeFromWhitelist(email) {
+            if (email === ADMIN_EMAIL) return;
+            
+            const whitelist = getWhitelist();
+            const updated = whitelist.filter(e => e !== email);
+            localStorage.setItem(WHITELIST_STORAGE_KEY, JSON.stringify(updated));
+            loadWhitelist();
+            showStatus("whitelist-status", `${email} wurde entfernt`, "success");
+        }
+        
+        // Blog speichern
+        function saveBlog() {
+            const content = document.getElementById("blog-editor").value;
+            localStorage.setItem(BLOG_STORAGE_KEY, formatAsHtml(content));
+            loadBlogContent();
+            showStatus("blog-status", "Blog erfolgreich aktualisiert!", "success");
+        }
+        
+        // Helper: E-Mail validieren
+        function validateEmail(email) {
+            return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+        }
+        
+        // Helper: Statusmeldung anzeigen
+        function showStatus(elementId, message, type) {
+            const element = document.getElementById(elementId);
+            element.textContent = message;
+            element.className = `status-message ${type}`;
+            element.classList.remove("hidden");
+            setTimeout(() => element.classList.add("hidden"), 3000);
         }
         
         // Helper: Text zu HTML formatieren
@@ -199,11 +320,23 @@
             return JSON.parse(jsonPayload);
         }
         
+        // Event Listener
+        document.getElementById("save-blog").addEventListener("click", saveBlog);
+        document.getElementById("add-email").addEventListener("click", () => {
+            addToWhitelist(document.getElementById("new-email").value.trim());
+        });
+        
+        // Enter-Taste für E-Mail-Eingabe
+        document.getElementById("new-email").addEventListener("keypress", (e) => {
+            if (e.key === "Enter") {
+                addToWhitelist(e.target.value.trim());
+            }
+        });
+        
         // Abmelden
         document.getElementById("signout-btn").addEventListener("click", () => {
             document.getElementById("auth-section").classList.remove("hidden");
             document.getElementById("content-section").classList.add("hidden");
-            document.getElementById("admin-panel").classList.add("hidden");
         });
     </script>
 </body>
