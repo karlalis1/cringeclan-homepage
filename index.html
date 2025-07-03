@@ -3,297 +3,156 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CringeClan - Startseite</title>
+    <title>CringeClan - Exklusivbereich</title>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
     <style>
-        /* Stile für beide Modi */
         :root {
-            --primary-color: #8ab4f8;
-            --header-bg: #202124;
-            --nav-bg: #303134;
-            --border-color: #5f6368;
-            --text-primary: #e8eaed;
-            --text-secondary: #9aa0a6;
-            --content-bg: #202124;
-            --shadow-color: rgba(0,0,0,0.3);
-        }
-        
-        .light-mode {
-            --header-bg: white;
-            --nav-bg: #f8f9fa;
-            --border-color: #dadce0;
-            --text-primary: #202124;
-            --text-secondary: #5f6368;
-            --content-bg: white;
-            --shadow-color: rgba(0,0,0,0.1);
+            --primary: #8ab4f8;
+            --background: #202124;
+            --card-bg: #303134;
+            --text: #e8eaed;
+            --border: #5f6368;
         }
         
         body {
-            font-family: 'Google Sans', Roboto, Arial, sans-serif;
+            font-family: 'Roboto', sans-serif;
+            background: var(--background);
+            color: var(--text);
             margin: 0;
-            padding: 0;
-            background-color: var(--content-bg);
-            color: var(--text-primary);
-            line-height: 1.6;
-            transition: all 0.3s ease;
-        }
-        
-        /* Header */
-        .sites-header {
-            height: 64px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0 24px;
-            border-bottom: 1px solid var(--border-color);
-            background: var(--header-bg);
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
-        
-        .sites-logo {
-            font-size: 22px;
-            font-weight: 500;
-            color: var(--text-primary);
-        }
-        
-        /* Dark Mode Toggle */
-        .mode-toggle {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            cursor: pointer;
-        }
-        
-        .toggle-switch {
-            width: 40px;
-            height: 20px;
-            background-color: #5f6368;
-            border-radius: 10px;
-            position: relative;
-            transition: background-color 0.3s;
-        }
-        
-        .toggle-switch::after {
-            content: '';
-            position: absolute;
-            width: 16px;
-            height: 16px;
-            border-radius: 50%;
-            background-color: white;
-            top: 2px;
-            left: 2px;
-            transition: transform 0.3s;
-        }
-        
-        .light-mode .toggle-switch {
-            background-color: #1a73e8;
-        }
-        
-        .light-mode .toggle-switch::after {
-            transform: translateX(20px);
-        }
-        
-        /* Navigation */
-        .sites-nav {
-            background: var(--nav-bg);
-            border-bottom: 1px solid var(--border-color);
-            padding: 0 24px;
-            height: 48px;
-            display: flex;
-            align-items: center;
-            overflow-x: auto;
-            white-space: nowrap;
-        }
-        
-        .nav-link {
-            color: var(--text-primary);
-            text-decoration: none;
-            padding: 12px 16px;
-            font-size: 14px;
-            position: relative;
-            transition: color 0.3s;
-        }
-        
-        .nav-link.active {
-            color: var(--primary-color);
-        }
-        
-        .nav-link.active::after {
-            content: '';
-            position: absolute;
-            bottom: -1px;
-            left: 16px;
-            right: 16px;
-            height: 3px;
-            background: var(--primary-color);
-            border-radius: 3px 3px 0 0;
-        }
-        
-        /* Hauptinhalt */
-        .sites-content {
-            max-width: 900px;
-            margin: 32px auto;
-            padding: 0 24px;
-        }
-        
-        .page-title {
-            font-size: 32px;
-            font-weight: 400;
-            margin: 0 0 24px 0;
-        }
-        
-        .content-section {
-            background: var(--content-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 24px;
-            margin-bottom: 24px;
-            box-shadow: 0 1px 2px var(--shadow-color);
-            transition: all 0.3s ease;
-        }
-        
-        /* Footer */
-        .sites-footer {
-            background: var(--nav-bg);
-            border-top: 1px solid var(--border-color);
             padding: 20px;
             text-align: center;
-            font-size: 12px;
-            color: var(--text-secondary);
         }
         
-        /* Mobile Anpassungen */
-        @media (max-width: 600px) {
-            .sites-content {
-                padding: 0 16px;
-            }
-            
-            .content-section {
-                padding: 16px;
-            }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .auth-card, .content-card {
+            background: var(--card-bg);
+            border-radius: 8px;
+            padding: 30px;
+            margin: 20px 0;
+            border: 1px solid var(--border);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        h1 {
+            color: var(--primary);
+        }
+        
+        #g_id_onload {
+            margin: 20px auto;
+        }
+        
+        #secret-content {
+            font-style: italic;
+            color: #f28b82;
+            font-size: 1.2em;
+            margin-top: 30px;
+            padding: 20px;
+            border-left: 3px solid var(--primary);
+            text-align: left;
         }
     </style>
 </head>
-<body class="dark-mode">
-    <!-- Header mit Dark Mode Toggle -->
-    <header class="sites-header">
-        <div class="sites-logo">CringeClan</div>
-        <div class="mode-toggle" id="modeToggle">
-            <span id="modeText">Light Mode</span>
-            <div class="toggle-switch"></div>
+<body>
+    <div class="container">
+        <h1>CringeClan Exklusivbereich</h1>
+        
+        <div id="auth-section" class="auth-card">
+            <h2>Anmeldung erforderlich</h2>
+            <p>Bitte mit Google-Konto anmelden:</p>
+            <div id="g_id_onload"
+                 data-client_id="YOUR_GOOGLE_CLIENT_ID"
+                 data-context="signin"
+                 data-ux_mode="popup"
+                 data-callback="handleGoogleSignIn"
+                 data-auto_prompt="false">
+            </div>
+            <div class="g_id_signin"
+                 data-type="standard"
+                 data-shape="rectangular"
+                 data-theme="dark"
+                 data-text="signin_with"
+                 data-size="large"
+                 data-logo_alignment="left">
+            </div>
         </div>
-    </header>
-    
-    <!-- Navigation -->
-    <nav class="sites-nav" id="mainNav">
-        <a href="#startseite" class="nav-link active">Startseite</a>
-        <a href="#über-uns" class="nav-link">Über uns</a>
-        <a href="#mitglieder" class="nav-link">Mitglieder</a>
-        <a href="#events" class="nav-link">Events</a>
-        <a href="#kontakt" class="nav-link">Kontakt</a>
-    </nav>
-    
-    <!-- Hauptinhalt -->
-    <main class="sites-content">
-        <h1 class="page-title">Startseite</h1>
         
-        <section class="content-section">
-            <h2>Willkommen beim CringeClan!</h2>
-            <p>Hier entsteht unsere offizielle Clan-Website. Bald gibt es hier mehr Informationen über uns.</p>
+        <div id="content-section" class="content-card hidden">
+            <h2>Willkommen, <span id="user-name"></span>!</h2>
+            <p>Deine E-Mail: <span id="user-email"></span></p>
             
-            <h3>Aktuelle News</h3>
-            <div id="news-container">
-                <!-- News werden per JS geladen -->
+            <div id="whitelist-content" class="hidden">
+                <h3>🔒 Exklusiver Inhalt</h3>
+                <div id="secret-content">
+                    <p>"Ich starte meine Karriere als DJ... (absolute Katastrophe)"</p>
+                    <p>Weitere geheime Clan-Infos kommen hier hin...</p>
+                </div>
             </div>
-        </section>
-        
-        <section class="content-section">
-            <h3>Clan-Regeln</h3>
-            <ul>
-                <li>Respektvolles Verhalten</li>
-                <li>Aktive Teilnahme</li>
-                <li>Teamplay wird großgeschrieben</li>
-                <li>Kein Cheating oder Hacking</li>
-                <li>Regelmäßige Aktivität erforderlich</li>
-            </ul>
-        </section>
-        
-        <section class="content-section">
-            <h3>Nächste Events</h3>
-            <div id="events-container">
-                <!-- Events werden per JS geladen -->
+            
+            <div id="no-access">
+                <p>Du hast keinen Zugriff auf die exklusiven Inhalte.</p>
             </div>
-        </section>
-    </main>
-    
-    <!-- Footer -->
-    <footer class="sites-footer">
-        © 2023 CringeClan | Powered by GitHub Pages
-    </footer>
-    
+            
+            <button id="signout-btn" style="margin-top: 20px;">Abmelden</button>
+        </div>
+    </div>
+
     <script>
-        // Dark Mode Toggle
-        const modeToggle = document.getElementById('modeToggle');
-        const modeText = document.getElementById('modeText');
-        const body = document.body;
+        // Whitelist der erlaubten E-Mails
+        const WHITELISTED_ACCOUNTS = [
+            "deine-email@gmail.com",  // Hier deine E-Mail eintragen
+            "admin@cringeclan.de",
+            "mitglied@example.com"
+        ];
         
-        // Prüfe gespeicherte Einstellung
-        if (localStorage.getItem('theme') === 'light') {
-            body.classList.add('light-mode');
-            modeText.textContent = 'Dark Mode';
+        function handleGoogleSignIn(response) {
+            // User-Daten decodieren
+            const userData = decodeJWT(response.credential);
+            
+            document.getElementById("user-name").textContent = userData.name;
+            document.getElementById("user-email").textContent = userData.email;
+            
+            // Whitelist prüfen
+            const hasAccess = WHITELISTED_ACCOUNTS.includes(userData.email);
+            
+            // UI anpassen
+            document.getElementById("auth-section").classList.add("hidden");
+            document.getElementById("content-section").classList.remove("hidden");
+            
+            if (hasAccess) {
+                document.getElementById("whitelist-content").classList.remove("hidden");
+                document.getElementById("no-access").classList.add("hidden");
+            } else {
+                document.getElementById("whitelist-content").classList.add("hidden");
+                document.getElementById("no-access").classList.remove("hidden");
+            }
         }
         
-        modeToggle.addEventListener('click', () => {
-            body.classList.toggle('light-mode');
+        function decodeJWT(token) {
+            const base64Url = token.split('.')[1];
+            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+            const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+                return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+            }).join(''));
             
-            if (body.classList.contains('light-mode')) {
-                modeText.textContent = 'Dark Mode';
-                localStorage.setItem('theme', 'light');
-            } else {
-                modeText.textContent = 'Light Mode';
-                localStorage.setItem('theme', 'dark');
-            }
-        });
+            return JSON.parse(jsonPayload);
+        }
         
-        // Aktive Navigation
-        document.querySelectorAll('.nav-link').forEach(link => {
-            link.addEventListener('click', function(e) {
-                e.preventDefault();
-                document.querySelectorAll('.nav-link').forEach(el => el.classList.remove('active'));
-                this.classList.add('active');
-            });
-        });
-        
-        // Dynamische News
-        const news = [
-            "Neues Clan-Update verfügbar!",
-            "Wöchentliches Turnier am Freitag",
-            "Neue Mitglieder willkommen!"
-        ];
-        
-        const newsContainer = document.getElementById('news-container');
-        news.forEach(item => {
-            const newsItem = document.createElement('p');
-            newsItem.innerHTML = `📢 ${item}`;
-            newsItem.style.margin = '8px 0';
-            newsContainer.appendChild(newsItem);
-        });
-        
-        // Dynamische Events
-        const events = [
-            { date: "15.10.2023", title: "Clan-Turnier", desc: "CS:GO Wettkampf" },
-            { date: "22.10.2023", title: "Community-Abend", desc: "Spieleabend" }
-        ];
-        
-        const eventsContainer = document.getElementById('events-container');
-        events.forEach(event => {
-            const eventElement = document.createElement('div');
-            eventElement.style.margin = '10px 0';
-            eventElement.innerHTML = `
-                <strong>${event.date}</strong>: ${event.title} - ${event.desc}
-            `;
-            eventsContainer.appendChild(eventElement);
+        document.getElementById("signout-btn").addEventListener("click", () => {
+            // Einfache Logout-Funktion
+            document.getElementById("auth-section").classList.remove("hidden");
+            document.getElementById("content-section").classList.add("hidden");
+            
+            // In einer echten App würden wir hier Google-Auth aufrufen
+            console.log("User hat sich abgemeldet");
         });
     </script>
 </body>
