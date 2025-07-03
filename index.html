@@ -279,6 +279,9 @@ Hier sind die neuesten Clan-Infos:
 Bleibt dran für Updates!
         `.trim();
         
+        // Globale Variable für den aktuellen Text
+        let currentText = DEFAULT_TEXT;
+
         // Google Sign-In Handler
         async function handleGoogleSignIn(response) {
             // Token verarbeiten
@@ -312,13 +315,16 @@ Bleibt dran für Updates!
                 badge.textContent = "Leser";
                 badge.classList.add("reader-badge");
                 badge.classList.remove("admin-badge");
+                
+                // Für Leser: Editor-Panel vollständig ausblenden
+                document.getElementById("editor-panel").classList.add("hidden");
             }
             
-            // Text aus JSONBin laden
+            // Text aus JSONBin laden und anzeigen
             await loadTextContent();
         }
         
-        // Text aus JSONBin laden
+        // Text aus JSONBin laden und anzeigen
         async function loadTextContent() {
             try {
                 const response = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/latest`, {
@@ -329,29 +335,26 @@ Bleibt dran für Updates!
                 });
                 
                 if (!response.ok) {
-                    throw new Error(`Fehler beim Laden: ${response.status}`);
+                    throw new Error(`HTTP Fehler ${response.status}`);
                 }
                 
                 const data = await response.json();
-                const content = data.content || DEFAULT_TEXT;
+                currentText = data.content || DEFAULT_TEXT;
                 
-                document.getElementById("displayed-text").textContent = content;
+                // Text anzeigen
+                document.getElementById("displayed-text").textContent = currentText;
                 
                 // Editor füllen (nur für Admins)
                 if (!document.getElementById("editor-panel").classList.contains("hidden")) {
-                    document.getElementById("text-editor").value = content;
+                    document.getElementById("text-editor").value = currentText;
                 }
                 
             } catch (error) {
                 console.error("JSONBin Fehler:", error);
-                document.getElementById("displayed-text").textContent = DEFAULT_TEXT;
-                
-                if (!document.getElementById("editor-panel").classList.contains("hidden")) {
-                    document.getElementById("text-editor").value = DEFAULT_TEXT;
-                }
+                document.getElementById("displayed-text").textContent = "Fehler beim Laden des Inhalts. Bitte versuche es später erneut.";
                 
                 const status = document.getElementById("status-message");
-                status.textContent = "Fehler: Verwende lokalen Text";
+                status.textContent = "Fehler: " + error.message;
                 status.className = "status-message error";
                 status.classList.remove("hidden");
             }
@@ -381,7 +384,10 @@ Bleibt dran für Updates!
                 // Erfolgsmeldung
                 status.textContent = "Text erfolgreich aktualisiert!";
                 status.className = "status-message success";
-                document.getElementById("displayed-text").textContent = newText;
+                
+                // Text sofort aktualisieren
+                currentText = newText;
+                document.getElementById("displayed-text").textContent = currentText;
                 
             } catch (error) {
                 console.error("Speicherfehler:", error);
@@ -417,26 +423,30 @@ Bleibt dran für Updates!
             document.getElementById("content-section").classList.add("hidden");
         });
         
-        // Initialer Bin-Setup (nur beim ersten Mal)
-        async function initializeBin() {
+        // Beim Start Bin initialisieren
+        window.addEventListener('DOMContentLoaded', async () => {
+            // Stelle sicher, dass der Bin existiert
             try {
-                await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`, {
-                    method: "PUT",
+                const response = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`, {
                     headers: {
-                        "Content-Type": "application/json",
                         "X-Master-Key": JSONBIN_API_KEY
-                    },
-                    body: JSON.stringify({ content: DEFAULT_TEXT })
+                    }
                 });
-                console.log("Bin initialisiert");
+                
+                if (response.status === 404) {
+                    // Bin existiert nicht - erstellen
+                    await fetch(`https://api.jsonbin.io/v3/b`, {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "X-Master-Key": JSONBIN_API_KEY
+                        },
+                        body: JSON.stringify({ content: DEFAULT_TEXT })
+                    });
+                }
             } catch (e) {
                 console.log("Bin existiert bereits");
             }
-        }
-        
-        // Beim Start Bin initialisieren
-        window.addEventListener('DOMContentLoaded', () => {
-            initializeBin();
         });
     </script>
 </body>
