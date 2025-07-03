@@ -46,10 +46,6 @@
             color: var(--primary);
         }
         
-        #g_id_onload {
-            margin: 20px auto;
-        }
-        
         #secret-content {
             font-style: italic;
             color: #f28b82;
@@ -69,7 +65,7 @@
             <h2>Anmeldung erforderlich</h2>
             <p>Bitte mit Google-Konto anmelden:</p>
             <div id="g_id_onload"
-                 data-client_id="YOUR_GOOGLE_CLIENT_ID"
+                 data-client_id="302339910588-46kgmvp20bo9buje51kerr6f6oqbbobc.apps.googleusercontent.com"
                  data-context="signin"
                  data-ux_mode="popup"
                  data-callback="handleGoogleSignIn"
@@ -93,7 +89,6 @@
                 <h3>🔒 Exklusiver Inhalt</h3>
                 <div id="secret-content">
                     <p>"Ich starte meine Karriere als DJ... (absolute Katastrophe)"</p>
-                    <p>Weitere geheime Clan-Infos kommen hier hin...</p>
                 </div>
             </div>
             
@@ -108,26 +103,19 @@
     <script>
         // Whitelist der erlaubten E-Mails
         const WHITELISTED_ACCOUNTS = [
-            "deine-email@gmail.com",  // Hier deine E-Mail eintragen
-            "admin@cringeclan.de",
-            "mitglied@example.com"
+            "cringealiyt@gmail.com",  // DEIN KONTO
+            "admin@example.com"        // Weitere E-Mails
         ];
         
         function handleGoogleSignIn(response) {
-            // User-Daten decodieren
             const userData = decodeJWT(response.credential);
-            
             document.getElementById("user-name").textContent = userData.name;
             document.getElementById("user-email").textContent = userData.email;
             
-            // Whitelist prüfen
-            const hasAccess = WHITELISTED_ACCOUNTS.includes(userData.email);
-            
-            // UI anpassen
             document.getElementById("auth-section").classList.add("hidden");
             document.getElementById("content-section").classList.remove("hidden");
             
-            if (hasAccess) {
+            if (WHITELISTED_ACCOUNTS.includes(userData.email)) {
                 document.getElementById("whitelist-content").classList.remove("hidden");
                 document.getElementById("no-access").classList.add("hidden");
             } else {
@@ -142,17 +130,12 @@
             const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
                 return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
             }).join(''));
-            
             return JSON.parse(jsonPayload);
         }
         
         document.getElementById("signout-btn").addEventListener("click", () => {
-            // Einfache Logout-Funktion
             document.getElementById("auth-section").classList.remove("hidden");
             document.getElementById("content-section").classList.add("hidden");
-            
-            // In einer echten App würden wir hier Google-Auth aufrufen
-            console.log("User hat sich abgemeldet");
         });
     </script>
 </body>
