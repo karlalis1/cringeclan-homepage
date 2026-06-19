@@ -380,6 +380,7 @@
             <!-- Admin Tabs -->
             <div class="admin-tabs">
                 <button class="admin-tab active" data-tab="projects">Projekte</button>
+                <button class="admin-tab" data-tab="events" data-admin-only="true">Ereignisse</button>
                 <button class="admin-tab" data-tab="stats">Statistiken</button>
                 <button class="admin-tab" data-tab="settings">Einstellungen</button>
                 <button class="admin-tab" data-tab="members">Mitglieder</button>
@@ -519,6 +520,61 @@
                         </button>
                     </div>
                     <div id="adminProjectsList"></div>
+                </div>
+            </div>
+
+            <div class="admin-tab-content" id="eventsTab">
+                <div class="admin-section">
+                    <h3 id="eventFormTitle">Ereignis hinzufügen</h3>
+                    <form id="eventForm">
+                        <input type="hidden" id="eventId">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="eventTitle">Titel *</label>
+                                <input type="text" id="eventTitle" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="eventType">Typ *</label>
+                                <input type="text" id="eventType" placeholder="z.B. Minecraft Server, Release, Community" required>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="eventDate">Datum und Uhrzeit *</label>
+                                <input type="datetime-local" id="eventDate" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="eventHost">Organisiert von *</label>
+                                <select id="eventHost" required></select>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="eventLocation">Ort *</label>
+                                <input type="text" id="eventLocation" placeholder="z.B. Discord, Minecraft Server" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="eventLink">Link</label>
+                                <input type="url" id="eventLink" placeholder="https://...">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="eventDescription">Beschreibung *</label>
+                            <textarea id="eventDescription" rows="4" required></textarea>
+                        </div>
+                        <div class="bulk-actions">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> <span id="eventSubmitText">Ereignis speichern</span>
+                            </button>
+                            <button type="button" class="btn btn-secondary" onclick="resetEventForm()">
+                                <i class="fas fa-rotate-left"></i> Zurücksetzen
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                <div class="admin-section">
+                    <h3>Ereignisse verwalten</h3>
+                    <div id="adminEventsList"></div>
                 </div>
             </div>
 
@@ -949,6 +1005,10 @@
                         <label for="editProjectCategory">Kategorie</label>
                         <input type="text" id="editProjectCategory">
                     </div>
+                </div>
+                <div class="form-group">
+                    <label for="editProjectTags">Tags (komma-getrennt)</label>
+                    <input type="text" id="editProjectTags" placeholder="z.B. minecraft, utility, fun">
                 </div>
                 <button type="submit" class="btn btn-primary">
                     <i class="fas fa-save"></i> Änderungen speichern

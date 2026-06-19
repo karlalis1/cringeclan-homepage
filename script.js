@@ -568,6 +568,7 @@ function getMemberOptionsHtml(selectedId = '') {
 function populateMemberSelects() {
     const projectMember = document.getElementById('projectMember');
     const editProjectMember = document.getElementById('editProjectMember');
+    const eventHost = document.getElementById('eventHost');
 
     if (projectMember) {
         projectMember.innerHTML = getMemberOptionsHtml('cringekarl');
@@ -575,6 +576,10 @@ function populateMemberSelects() {
 
     if (editProjectMember) {
         editProjectMember.innerHTML = getMemberOptionsHtml();
+    }
+
+    if (eventHost) {
+        eventHost.innerHTML = getMemberOptionsHtml('cringekarl');
     }
 }
 
@@ -618,6 +623,20 @@ function normalizeEvent(event, index = 0) {
         hostId: event.hostId || fallbackMember?.id || 'cringekarl',
         link: event.link || 'https://discord.gg/pmZWDGFz'
     };
+}
+
+function formatDateTimeLocalValue(value) {
+    if (!value) {
+        return '';
+    }
+
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+        return '';
+    }
+
+    const timezoneOffset = date.getTimezoneOffset() * 60000;
+    return new Date(date.getTime() - timezoneOffset).toISOString().slice(0, 16);
 }
 
 function getUpcomingEvents() {
@@ -1015,6 +1034,7 @@ function refreshAppUI() {
     renderInternalContent();
     updateStatsDisplay();
     loadAdminProjects();
+    loadAdminEvents();
     loadAdminMembers();
     loadAdminSocials();
     loadAdminStats();
@@ -1877,8 +1897,10 @@ function openAdminPanel() {
     document.body.style.overflow = 'hidden';
     populateMemberSelects();
     resetMemberForm();
+    resetEventForm();
     resetSocialForm();
     loadAdminProjects();
+    loadAdminEvents();
     loadAdminMembers();
     loadAdminSocials();
     loadAdminStats();
@@ -1965,6 +1987,19 @@ function resetMemberForm() {
     renderMemberSocialAssignments();
     updateMemberImagePreview('');
     updateAllMemberSocialAssignmentPreviews();
+}
+
+function resetEventForm() {
+    const form = document.getElementById('eventForm');
+    if (!form) return;
+
+    form.reset();
+    document.getElementById('eventId').value = '';
+    document.getElementById('eventFormTitle').textContent = 'Ereignis hinzufügen';
+    document.getElementById('eventSubmitText').textContent = 'Ereignis speichern';
+    document.getElementById('eventDate').value = formatDateTimeLocalValue(getFutureDateISO(7, 19, 0));
+    document.getElementById('eventHost').value = clanMembers[0]?.id || 'cringekarl';
+    document.getElementById('eventLink').value = 'https://discord.gg/pmZWDGFz';
 }
 
 function resetSocialForm() {
@@ -2106,6 +2141,41 @@ function loadAdminMembers() {
             <div class="admin-member-actions">
                 <button class="btn-edit" onclick="editMember('${member.id}')" title="Bearbeiten" ${canEditMember(member.id) ? '' : 'disabled'}>
                     <i class="fas fa-edit"></i>
+                </button>
+            </div>
+        `;
+        list.appendChild(item);
+    });
+}
+
+function loadAdminEvents() {
+    const list = document.getElementById('adminEventsList');
+    if (!list) return;
+
+    if (!events.length) {
+        list.innerHTML = '<p class="member-social-empty">Noch keine Ereignisse angelegt.</p>';
+        return;
+    }
+
+    list.innerHTML = '';
+
+    const sortedEvents = [...events].sort((a, b) => new Date(a.date) - new Date(b.date));
+    sortedEvents.forEach(event => {
+        const host = getMemberById(event.hostId);
+        const item = document.createElement('div');
+        item.className = 'admin-event-item';
+        item.innerHTML = `
+            <div class="admin-event-info">
+                <strong>${sanitizeInput(event.title)}</strong>
+                <p>${sanitizeInput(event.type)} · ${new Date(event.date).toLocaleString('de-DE')}</p>
+                <small>${sanitizeInput(event.location)} · ${sanitizeInput(host.name)}</small>
+            </div>
+            <div class="admin-event-actions">
+                <button class="btn-edit" onclick="editEvent('${event.id}')" title="Bearbeiten">
+                    <i class="fas fa-edit"></i>
+                </button>
+                <button class="btn-delete" onclick="deleteEvent('${event.id}')" title="Löschen">
+                    <i class="fas fa-trash"></i>
                 </button>
             </div>
         `;
@@ -2705,6 +2775,7 @@ function editProject(id) {
     document.getElementById('editProjectMember').value = project.ownerId || 'cringekarl';
     document.getElementById('editProjectDescription').value = project.description;
     document.getElementById('editProjectType').value = project.type || 'other';
+    document.getElementById('editProjectCategory').value = project.category || '';
     document.getElementById('editProjectTags').value = project.tags ? project.tags.join(', ') : '';
     
     // Get primary platform (first in array)
@@ -2750,6 +2821,7 @@ function handleEditProject(e) {
     const primaryUrl = document.getElementById('editProjectUrl').value.trim();
     const image = document.getElementById('editProjectImage').value.trim();
     const downloads = parseInt(document.getElementById('editProjectDownloads').value) || 0;
+    const category = document.getElementById('editProjectCategory').value.trim();
     const tags = document.getElementById('editProjectTags').value.split(',').map(t => t.trim()).filter(t => t);
     
     // Get additional platforms
@@ -2785,6 +2857,7 @@ function handleEditProject(e) {
         ownerId,
         description,
         type,
+        category,
         platforms,
         image,
         downloads,
@@ -2807,6 +2880,103 @@ function handleEditProject(e) {
     
     showToast('Projekt erfolgreich aktualisiert!', 'success');
     logActivity('project_edit', `Edited project: ${name}`);
+}
+
+function editEvent(eventId) {
+    if (!requireAdminAccess()) {
+        return;
+    }
+
+    const event = events.find(entry => String(entry.id) === String(eventId));
+    if (!event) {
+        return;
+    }
+
+    document.querySelectorAll('.admin-tab').forEach(tab => tab.classList.remove('active'));
+    document.querySelectorAll('.admin-tab-content').forEach(content => content.classList.remove('active'));
+    document.querySelector('.admin-tab[data-tab="events"]')?.classList.add('active');
+    document.getElementById('eventsTab')?.classList.add('active');
+
+    document.getElementById('eventId').value = event.id;
+    document.getElementById('eventTitle').value = event.title;
+    document.getElementById('eventType').value = event.type;
+    document.getElementById('eventDate').value = formatDateTimeLocalValue(event.date);
+    document.getElementById('eventHost').value = event.hostId || 'cringekarl';
+    document.getElementById('eventLocation').value = event.location || '';
+    document.getElementById('eventLink').value = event.link || '';
+    document.getElementById('eventDescription').value = event.description || '';
+    document.getElementById('eventFormTitle').textContent = 'Ereignis bearbeiten';
+    document.getElementById('eventSubmitText').textContent = 'Änderungen speichern';
+}
+
+function deleteEvent(eventId) {
+    if (!requireAdminAccess()) {
+        return;
+    }
+
+    const event = events.find(entry => String(entry.id) === String(eventId));
+    if (!event) {
+        return;
+    }
+
+    if (!confirm(`Möchtest du das Ereignis "${event.title}" wirklich löschen?`)) {
+        return;
+    }
+
+    events = events.filter(entry => String(entry.id) !== String(eventId));
+    saveData();
+    loadAdminEvents();
+    renderEventsOverview();
+    resetEventForm();
+    showToast('Ereignis gelöscht', 'success');
+    logActivity('event_delete', `Deleted event: ${event.title}`);
+}
+
+function handleEventSave(e) {
+    e.preventDefault();
+
+    if (!requireAdminAccess()) {
+        return;
+    }
+
+    const eventId = document.getElementById('eventId').value.trim();
+    const title = document.getElementById('eventTitle').value.trim();
+    const type = document.getElementById('eventType').value.trim();
+    const dateInput = document.getElementById('eventDate').value;
+    const hostId = document.getElementById('eventHost').value;
+    const location = document.getElementById('eventLocation').value.trim();
+    const link = document.getElementById('eventLink').value.trim() || 'https://discord.gg/pmZWDGFz';
+    const description = document.getElementById('eventDescription').value.trim();
+
+    if (!title || !type || !dateInput || !hostId || !location || !description) {
+        showToast('Bitte fülle alle Pflichtfelder für das Ereignis aus', 'error');
+        return;
+    }
+
+    const normalizedEvent = normalizeEvent({
+        id: eventId || `event-${Date.now()}`,
+        title,
+        type,
+        date: new Date(dateInput).toISOString(),
+        description,
+        location,
+        hostId,
+        link
+    });
+
+    const existingIndex = events.findIndex(entry => String(entry.id) === String(normalizedEvent.id));
+    if (existingIndex >= 0) {
+        events[existingIndex] = normalizedEvent;
+    } else {
+        events.push(normalizedEvent);
+    }
+
+    saveData();
+    loadAdminEvents();
+    renderEventsOverview();
+    resetEventForm();
+    showToast(eventId ? 'Ereignis aktualisiert' : 'Ereignis gespeichert', 'success');
+    logActivity(eventId ? 'event_edit' : 'event_add', `${eventId ? 'Updated' : 'Added'} event: ${title}`);
 }
 
 function handleStatsUpdate(e) {
@@ -3464,6 +3634,7 @@ function importData(event) {
             
             saveData();
             loadAdminProjects();
+            loadAdminEvents();
             loadAdminStats();
             loadAdminMembers();
             loadAdminSocials();
@@ -3959,6 +4130,7 @@ document.getElementById('apiForm')?.addEventListener('submit', handleAPIIntegrat
 document.getElementById('memberForm')?.addEventListener('submit', handleMemberSave);
 document.getElementById('socialDefinitionForm')?.addEventListener('submit', handleSocialDefinitionSave);
 document.getElementById('internalContentForm')?.addEventListener('submit', handleInternalContentSave);
+document.getElementById('eventForm')?.addEventListener('submit', handleEventSave);
 
 document.addEventListener('change', (e) => {
     if (e.target.matches('#projectPlatform, #editProjectPlatform, .additional-platform-select')) {
