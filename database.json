@@ -1,0 +1,57 @@
+{
+  "projects": [
+    {
+      "id": 1,
+      "name": "Beispiel Projekt 1",
+      "description": "Dies ist ein Beispielprojekt für deine Landing Page. Du kannst es im Admin Panel bearbeiten oder löschen.",
+      "platform": "github",
+      "url": "https://github.com",
+      "image": "",
+      "downloads": 100,
+      "created": "2024-01-01",
+      "updated": "2024-01-01"
+    },
+    {
+      "id": 2,
+      "name": "Beispiel Projekt 2",
+      "description": "Noch ein spannendes Projekt für deine Portfolio-Seite",
+      "platform": "modrinth",
+      "url": "https://modrinth.com",
+      "image": "",
+      "downloads": 250,
+      "created": "2024-01-02",
+      "updated": "2024-01-02"
+    }
+  ],
+  "stats": {
+    "downloads": 350,
+    "community": 150,
+    "views": 1200
+  },
+  "platforms": {
+    "github": {
+      "name": "GitHub",
+      "icon": "fab fa-github",
+      "color": "#6366f1",
+      "baseUrl": "https://github.com"
+    },
+    "modrinth": {
+      "name": "Modrinth",
+      "icon": "fas fa-cube",
+      "color": "#10b981",
+      "baseUrl": "https://modrinth.com"
+    },
+    "curseforge": {
+      "name": "CurseForge",
+      "icon": "fas fa-fire",
+      "color": "#ef4444",
+      "baseUrl": "https://curseforge.com"
+    },
+    "other": {
+      "name": "Andere",
+      "icon": "fas fa-star",
+      "color": "#f472b6",
+      "baseUrl": ""
+    }
+  }
+}

@@ -1,0 +1,16 @@
+# Robots.txt für Karlali Landing Page
+
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /private/
+
+Sitemap: https://karlali.com/sitemap.xml
+
+# Crawl-delay für respektvolles Crawling
+Crawl-delay: 1
+
+# Verbiete bestimmte Dateitypen
+Disallow: /*.json$
+Disallow: /*.txt$
+Disallow: /*.log$

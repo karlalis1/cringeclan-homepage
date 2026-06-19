@@ -1,456 +1,1091 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="de" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CringeClan Portal</title>
-    <script src="https://accounts.google.com/gsi/client" async defer></script>
-    <style>
-        :root {
-            --primary: #8ab4f8;
-            --background: #202124;
-            --card-bg: #303134;
-            --text: #e8eaed;
-            --border: #5f6368;
-            --admin-accent: #fbbc04;
-            --reader-accent: #81c995;
-            --success: #81c995;
-            --error: #f28b82;
-        }
-        
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-        
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: var(--background);
-            color: var(--text);
-            line-height: 1.6;
-            padding: 20px;
-            min-height: 100vh;
-        }
-        
-        .container {
-            max-width: 900px;
-            margin: 0 auto;
-        }
-        
-        header {
-            text-align: center;
-            margin-bottom: 30px;
-            padding: 20px;
-            border-bottom: 1px solid var(--border);
-        }
-        
-        h1 {
-            color: var(--primary);
-            font-size: 2.5rem;
-            margin-bottom: 10px;
-        }
-        
-        .card {
-            background: var(--card-bg);
-            border-radius: 12px;
-            padding: 30px;
-            margin-bottom: 25px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            border: 1px solid var(--border);
-        }
-        
-        .hidden {
-            display: none;
-        }
-        
-        .auth-card {
-            text-align: center;
-        }
-        
-        .g_id_signin {
-            margin: 20px auto;
-        }
-        
-        .content-section {
-            position: relative;
-        }
-        
-        .admin-badge {
-            position: absolute;
-            top: 15px;
-            right: 15px;
-            background: var(--admin-accent);
-            color: #202124;
-            padding: 5px 10px;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            font-weight: bold;
-        }
-        
-        .reader-badge {
-            position: absolute;
-            top: 15px;
-            right: 15px;
-            background: var(--reader-accent);
-            color: #202124;
-            padding: 5px 10px;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            font-weight: bold;
-        }
-        
-        #displayed-text {
-            font-size: 1.1rem;
-            line-height: 1.8;
-            margin: 20px 0;
-            padding: 20px;
-            background: rgba(255,255,255,0.05);
-            border-radius: 8px;
-            white-space: pre-wrap;
-            min-height: 200px;
-        }
-        
-        .editor-panel {
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 1px solid var(--border);
-        }
-        
-        textarea {
-            width: 100%;
-            min-height: 200px;
-            background: rgba(0,0,0,0.2);
-            color: var(--text);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 15px;
-            font-size: 1rem;
-            font-family: inherit;
-            resize: vertical;
-            margin-bottom: 15px;
-        }
-        
-        button {
-            background: var(--primary);
-            color: #202124;
-            border: none;
-            padding: 12px 25px;
-            border-radius: 8px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.3s;
-            font-size: 1rem;
-        }
-        
-        button:hover {
-            opacity: 0.9;
-            transform: translateY(-2px);
-        }
-        
-        .logout-btn {
-            background: #5f6368;
-            color: white;
-            margin-top: 20px;
-        }
-        
-        .status-message {
-            padding: 10px;
-            margin-top: 15px;
-            border-radius: 8px;
-            text-align: center;
-        }
-        
-        .success {
-            background-color: rgba(129, 201, 149, 0.3);
-        }
-        
-        .error {
-            background-color: rgba(242, 139, 130, 0.3);
-        }
-        
-        .loader {
-            border: 4px solid rgba(255, 255, 255, 0.3);
-            border-radius: 50%;
-            border-top: 4px solid var(--primary);
-            width: 30px;
-            height: 30px;
-            animation: spin 1s linear infinite;
-            margin: 20px auto;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        footer {
-            text-align: center;
-            margin-top: 40px;
-            padding: 20px;
-            color: #9aa0a6;
-            font-size: 0.9rem;
-        }
-    </style>
+    <meta name="description" content="CRINGECLAN - Projekte, Mitglieder, Discord und Community an einem Ort.">
+    <meta name="keywords" content="Cringeclan, Projekte, Discord, Community, Minecraft, Clan">
+    <meta name="author" content="CRINGECLAN">
+    <meta name="robots" content="index, follow">
+
+    <!-- Open Graph / Social Media -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="CRINGECLAN">
+    <meta property="og:description" content="Projekte, Mitglieder und Community an einem Ort">
+    <meta property="og:image" content="https://karlali.com/og-image.jpg">
+    <meta property="og:url" content="https://karlali.com">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="CRINGECLAN">
+    <meta name="twitter:description" content="Projekte, Mitglieder und Community an einem Ort">
+    <meta name="twitter:image" content="https://karlali.com/og-image.jpg">
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#6366f1">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    
+    <!-- Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "CRINGECLAN",
+      "url": "https://karlali.com",
+      "description": "CRINGECLAN - Projekte, Mitglieder und Community an einem Ort"
+    }
+    </script>
+
+    <title>CRINGECLAN</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>CringeClan Portal</h1>
-            <p>Exklusive Inhalte für Clan-Mitglieder</p>
-        </header>
-        
-        <!-- Anmeldebereich -->
-        <div id="auth-section" class="card auth-card">
-            <h2>Anmeldung erforderlich</h2>
-            <p>Bitte mit Google-Konto anmelden:</p>
-            <div id="g_id_onload"
-                 data-client_id="302339910588-46kgmvp20bo9buje51kerr6f6oqbbobc.apps.googleusercontent.com"
-                 data-context="signin"
-                 data-ux_mode="popup"
-                 data-callback="handleGoogleSignIn"
-                 data-auto_prompt="false">
-            </div>
-            <div class="g_id_signin"
-                 data-type="standard"
-                 data-shape="rectangular"
-                 data-theme="dark"
-                 data-text="signin_with"
-                 data-size="large"
-                 data-logo_alignment="left">
-            </div>
-        </div>
-        
-        <!-- Inhaltsbereich -->
-        <div id="content-section" class="hidden">
-            <div class="card content-section">
-                <div id="user-badge" class="admin-badge hidden">Admin</div>
-                
-                <h2>Willkommen, <span id="user-name"></span>!</h2>
-                
-                <div id="displayed-text">
-                    <div class="loader"></div>
-                    <p style="text-align: center; margin-top: 10px;">Lade Inhalt...</p>
-                </div>
-                
-                <!-- Editor nur für Admins -->
-                <div id="editor-panel" class="editor-panel hidden">
-                    <h3>Text bearbeiten:</h3>
-                    <textarea id="text-editor" placeholder="Gib hier deinen Text ein..."></textarea>
-                    <button id="update-text">Text aktualisieren</button>
-                    <div id="status-message" class="status-message hidden"></div>
-                </div>
-                
-                <button id="signout-btn" class="logout-btn">Abmelden</button>
-            </div>
-        </div>
-        
-        <footer>
-            © 2025 CringeClan | Exklusiv für Clan-Mitglieder
-        </footer>
+    <!-- Scroll Progress Bar -->
+    <div class="scroll-progress" id="scrollProgress"></div>
+    
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+    
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner"></div>
+        <p>Lade...</p>
     </div>
 
+    <!-- Navigation -->
+    <nav class="navbar clan-navbar">
+        <div class="nav-container">
+            <div class="nav-logo">CRINGECLAN</div>
+
+            <button class="mobile-menu-toggle" id="mobileMenuToggle" aria-label="Menü öffnen">
+                <i class="fas fa-bars"></i>
+            </button>
+
+            <div class="nav-actions">
+                <button class="theme-toggle" id="themeToggle" aria-label="Theme wechseln">
+                    <i class="fas fa-moon"></i>
+                </button>
+                <button class="help-btn" onclick="openShortcutsModal()" aria-label="Tastaturkürzel anzeigen">
+                    <i class="fas fa-keyboard"></i>
+                </button>
+                <button class="admin-btn" onclick="openAdminModal()" aria-label="Admin Panel öffnen">
+                    <i class="fas fa-lock"></i> <span class="btn-text">Admin</span>
+                </button>
+            </div>
+        </div>
+
+        <ul class="nav-menu mobile-menu" id="mobileMenu">
+            <li><a href="#" data-tab-target="startseite">Startseite</a></li>
+            <li><a href="#" data-tab-target="projekte">Projekte</a></li>
+            <li><a href="#" data-tab-target="ereignisse">Ereignisse</a></li>
+            <li><a href="#" data-tab-target="intern" data-clan-auth="true" class="hidden">Intern</a></li>
+            <li><a href="#" data-tab-target="kontakt">Kontakt</a></li>
+            <li><a href="#" data-tab-target="mitglieder">Mitglieder</a></li>
+        </ul>
+    </nav>
+
+    <header class="site-header">
+        <div class="container">
+            <p class="site-kicker">Aura &gt; Realität</p>
+            <h1 class="clan-name">CRINGECLAN</h1>
+            <p class="clan-subtitle">Projekte, Running Gags, Community und Discord an einem Ort.</p>
+        </div>
+        <div class="hero-background">
+            <canvas id="particleCanvas"></canvas>
+            <div class="floating-shape shape-1"></div>
+            <div class="floating-shape shape-2"></div>
+            <div class="floating-shape shape-3"></div>
+        </div>
+    </header>
+
+    <nav class="tab-navigation" aria-label="Bereiche">
+        <button class="tab-btn active" data-tab="startseite">Startseite</button>
+        <button class="tab-btn" data-tab="projekte">Projekte</button>
+        <button class="tab-btn" data-tab="ereignisse">Ereignisse</button>
+        <button class="tab-btn hidden" data-tab="intern" data-clan-auth="true">Intern</button>
+        <button class="tab-btn" data-tab="kontakt">Kontakt</button>
+        <button class="tab-btn" data-tab="mitglieder">Mitglieder</button>
+    </nav>
+
+    <main class="content-area">
+        <section id="startseite" class="tab-content active">
+            <div class="container">
+                <div class="hero-section">
+                    <h2>Willkommen beim Cringeclan</h2>
+                    <p class="tagline">Aura &gt; Realität</p>
+                    <p class="hero-copy">Die Seite ist jetzt auf ein klares Clan-Layout ausgelegt. Im Fokus stehen die Projekte aller Mitglieder, direkter Discord-Zugang und eine kompakte Übersicht über den ganzen Clan.</p>
+                    <div class="hero-buttons">
+                        <button class="btn btn-primary" type="button" data-tab="projekte">Projekte ansehen</button>
+                        <a href="https://discord.gg/pmZWDGFz" class="btn btn-secondary" target="_blank" rel="noreferrer">
+                            <i class="fab fa-discord"></i> Discord beitreten
+                        </a>
+                    </div>
+                    <div class="hero-highlights">
+                        <div class="hero-highlight-card">
+                            <i class="fas fa-users"></i>
+                            <strong>Clan Fokus</strong>
+                            <span>Mitglieder, Rollen und Projekte sind klar getrennt und schnell erreichbar.</span>
+                        </div>
+                        <div class="hero-highlight-card">
+                            <i class="fas fa-folder-tree"></i>
+                            <strong>Projektübersicht</strong>
+                            <span>Alle Projekte zeigen direkt einen kleinen Hinweis, von wem sie sind.</span>
+                        </div>
+                    </div>
+                </div>
+                <section class="startpage-news-section" aria-labelledby="startpageNewsTitle">
+                    <div class="updates-toolbar">
+                        <div class="updates-info-card">
+                            <div class="updates-info-header">
+                                <div>
+                                    <h3 id="startpageNewsTitle">Discord News</h3>
+                                    <p>Neuigkeiten und Highlights aus dem Clan direkt auf der Startseite.</p>
+                                </div>
+                                <span id="discordFeedStatus" class="status-pill info">Wird geladen</span>
+                            </div>
+                            <p id="discordFeedMeta">Hier erscheinen aktuelle News aus dem Clan. Wenn der Live-Feed nicht verfuegbar ist, werden lokale Updates angezeigt.</p>
+                        </div>
+                    </div>
+                    <div class="blog-grid" id="blogGrid"></div>
+                </section>
+            </div>
+        </section>
+
+        <section id="projekte" class="tab-content">
+            <div class="container">
+                <div class="section-intro">
+                    <h2 class="section-title">Projekte</h2>
+                    <p class="section-subtitle">Hier siehst du die Projektübersicht mit allen Projekten, jeweils mit kleinem Hinweis vom zugehörigen Mitglied.</p>
+                </div>
+
+                <div class="clan-stats projects-summary-stats">
+                    <div class="hero-stat">
+                        <i class="fas fa-folder"></i>
+                        <span id="heroProjectCount">0</span>
+                        <span>Projekte</span>
+                    </div>
+                    <div class="hero-stat">
+                        <i class="fas fa-download"></i>
+                        <span id="heroDownloadCount">0</span>
+                        <span>Downloads</span>
+                    </div>
+                    <div class="hero-stat">
+                        <i class="fas fa-code-branch"></i>
+                        <span id="heroPlatformCount">0</span>
+                        <span>Plattformen</span>
+                    </div>
+                </div>
+
+                <div class="projects-controls clan-project-controls">
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="projectSearch" placeholder="Projekte durchsuchen..." aria-label="Projekte durchsuchen">
+                    </div>
+                    <div class="filter-buttons">
+                        <button class="filter-btn active" data-filter="all">Alle</button>
+                        <button class="filter-btn" data-filter="mcserver">Server</button>
+                        <button class="filter-btn" data-filter="mod">Mods</button>
+                        <button class="filter-btn" data-filter="tool">Tools</button>
+                        <button class="filter-btn" data-filter="app">Apps</button>
+                        <button class="filter-btn" data-filter="other">Sonstiges</button>
+                    </div>
+                    <div class="advanced-filter">
+                        <select id="sortOrder" aria-label="Sortierung">
+                            <option value="newest">Neueste zuerst</option>
+                            <option value="oldest">Älteste zuerst</option>
+                            <option value="downloads">Meiste Downloads</option>
+                            <option value="name">Alphabetisch</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="projects-grid" id="projectsGrid"></div>
+
+                <div class="empty-state" id="emptyState" style="display: none;">
+                    <i class="fas fa-folder-open"></i>
+                    <p>Keine Projekte gefunden</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="ereignisse" class="tab-content">
+            <div class="container">
+                <div class="section-intro">
+                    <h2 class="section-title">Ereignisse</h2>
+                    <p class="section-subtitle">Hier stehen kommende Sachen wie Minecraft-Server-Abende, Clan-Talks, Releases oder andere geplante Ereignisse.</p>
+                </div>
+                <div class="events-grid" id="eventsGrid"></div>
+                <div class="empty-state" id="eventsEmptyState" style="display: none;">
+                    <i class="fas fa-calendar-xmark"></i>
+                    <p>Aktuell sind keine zukünftigen Ereignisse eingetragen.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="intern" class="tab-content">
+            <div class="container">
+                <div class="section-intro">
+                    <h2 class="section-title">Clanintern</h2>
+                    <p class="section-subtitle">Dieser Bereich ist nur für eingeloggte Clan-Mitglieder und Admins sichtbar.</p>
+                </div>
+                <div class="internal-content-card">
+                    <div class="internal-content-header">
+                        <span class="status-pill info">Nur intern</span>
+                        <p>Admins können diesen Text im Admin-Panel bearbeiten.</p>
+                    </div>
+                    <div id="memberAreaText" class="internal-content-body"></div>
+                </div>
+            </div>
+        </section>
+
+        <section id="kontakt" class="tab-content">
+            <div class="container">
+                <div class="contact-shell">
+                    <div class="contact-section">
+                        <h2>Kontaktiere uns</h2>
+                        <p>Du willst mit dem Clan schreiben oder einem Projekt beitreten? Discord ist der schnellste Weg.</p>
+                        <div class="contact-methods">
+                            <div class="contact-card">
+                                <span class="contact-icon">💬</span>
+                                <h3>Discord</h3>
+                                <p>Tritt unserem Discord bei und schreib direkt mit uns.</p>
+                                <a href="https://discord.gg/pmZWDGFz" target="_blank" rel="noreferrer" class="contact-btn">Discord beitreten</a>
+                            </div>
+                            <div class="contact-card">
+                                <span class="contact-icon">🎮</span>
+                                <h3>Minecraft</h3>
+                                <p>Server und Events laufen über den Clan und Discord.</p>
+                                <span class="contact-detail">Server-IP: coming soon</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <form class="contact-form" id="contactForm">
+                        <div class="form-group">
+                            <input type="text" id="contactName" placeholder="Dein Name" required aria-label="Dein Name">
+                        </div>
+                        <div class="form-group">
+                            <input type="email" id="contactEmail" placeholder="Deine E-Mail" required aria-label="Deine E-Mail">
+                        </div>
+                        <div class="form-group">
+                            <textarea id="contactMessage" placeholder="Deine Nachricht" rows="5" required aria-label="Deine Nachricht"></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-paper-plane"></i> Nachricht senden
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+        <section id="mitglieder" class="tab-content">
+            <div class="container">
+                <div class="section-intro">
+                    <h2 class="section-title">Mitglieder</h2>
+                    <p class="section-subtitle">Alle Mitglieder im Überblick, zusammen mit ihren aktuellen Projekten.</p>
+                </div>
+                <div class="members-overview-grid" id="membersGrid"></div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer clan-footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h4>CRINGECLAN</h4>
+                    <p>Clan, Projekte und Community an einem Ort.</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Bereiche</h4>
+                    <ul>
+                        <li><a href="#" data-tab-target="startseite">Startseite</a></li>
+                        <li><a href="#" data-tab-target="projekte">Projekte</a></li>
+                        <li><a href="#" data-tab-target="ereignisse">Ereignisse</a></li>
+                        <li><a href="#" data-tab-target="intern" data-clan-auth="true" class="hidden">Intern</a></li>
+                        <li><a href="#" data-tab-target="kontakt">Kontakt</a></li>
+                        <li><a href="#" data-tab-target="mitglieder">Mitglieder</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Rechtliches</h4>
+                    <ul>
+                        <li><a href="#" id="impressumLink">Impressum</a></li>
+                        <li><a href="#" id="datenschutzLink">Datenschutz</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Social</h4>
+                    <div class="footer-social">
+                        <a href="https://discord.gg/pmZWDGFz" aria-label="Discord" target="_blank" rel="noreferrer"><i class="fab fa-discord"></i></a>
+                        <a href="https://modrinth.com/mod/dner-kebab-mod" aria-label="Modrinth" target="_blank" rel="noreferrer"><i class="fas fa-cube"></i></a>
+                        <a href="https://github.com/karlali" aria-label="GitHub" target="_blank" rel="noreferrer"><i class="fab fa-github"></i></a>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 Cringeclan. Alle Rechte vorbehalten.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Back to Top Button -->
+    <button class="back-to-top" id="backToTop" aria-label="Nach oben scrollen">
+        <i class="fas fa-arrow-up"></i>
+    </button>
+
+    <!-- Admin Modal -->
+    <div class="modal" id="adminModal" role="dialog" aria-modal="true" aria-labelledby="adminModalTitle">
+        <div class="modal-content">
+            <span class="close" onclick="closeAdminModal()" aria-label="Schließen">&times;</span>
+            <h2 id="adminModalTitle">Login</h2>
+            <div class="auth-login-shell">
+                <p id="authModalIntro" class="auth-login-copy">Melde dich mit Google an. Admins duerfen alles bearbeiten, Mitglieder nur ihr eigenes Profil.</p>
+                <button type="button" class="btn btn-primary" id="googleLoginButton">
+                    <i class="fab fa-google"></i> Mit Google anmelden
+                </button>
+                <p id="authStatusMessage" class="auth-login-status">Firebase noch nicht verbunden.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Panel -->
+    <div class="admin-panel" id="adminPanel" role="dialog" aria-modal="true" aria-labelledby="adminPanelTitle">
+        <div class="admin-header">
+            <h2 id="adminPanelTitle">Admin Panel</h2>
+            <div class="admin-header-actions">
+                <button class="btn btn-secondary hidden" id="authSignOutButton" title="Abmelden">
+                    <i class="fas fa-right-from-bracket"></i> Abmelden
+                </button>
+                <button class="btn btn-secondary" onclick="exportData()" title="Daten exportieren">
+                    <i class="fas fa-download"></i> Export
+                </button>
+                <button class="btn btn-secondary" onclick="document.getElementById('importInput').click()" title="Daten importieren">
+                    <i class="fas fa-upload"></i> Import
+                </button>
+                <input type="file" id="importInput" accept=".json" style="display: none;" onchange="importData(event)">
+                <button class="btn btn-secondary" onclick="closeAdminPanel()" title="Schließen">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
+        <div class="admin-content">
+            <!-- Admin Tabs -->
+            <div class="admin-tabs">
+                <button class="admin-tab active" data-tab="projects">Projekte</button>
+                <button class="admin-tab" data-tab="stats">Statistiken</button>
+                <button class="admin-tab" data-tab="settings">Einstellungen</button>
+                <button class="admin-tab" data-tab="members">Mitglieder</button>
+                <button class="admin-tab" data-tab="socials">Socials</button>
+                <button class="admin-tab" data-tab="internal" data-admin-only="true">Intern</button>
+                <button class="admin-tab" data-tab="activity">Aktivität</button>
+            </div>
+
+            <!-- Projects Tab -->
+            <div class="admin-tab-content active" id="projectsTab">
+                <div class="admin-section">
+                    <h3>Projekt hinzufügen</h3>
+                    <div class="template-selector">
+                        <label>Vorlage auswählen:</label>
+                        <select id="projectTemplate">
+                            <option value="">Leeres Projekt</option>
+                            <option value="github">GitHub Projekt</option>
+                            <option value="modrinth">Modrinth Mod</option>
+                            <option value="curseforge">CurseForge Projekt</option>
+                            <option value="tool">Tool/Utility</option>
+                        </select>
+                    </div>
+                    <form id="addProjectForm">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="projectName">Projekt Name *</label>
+                                <input type="text" id="projectName" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="projectMember">Mitglied *</label>
+                                <select id="projectMember" required></select>
+                            </div>
+                            <div class="form-group">
+                                <label for="projectType">Projekt Typ *</label>
+                                <select id="projectType" required>
+                                    <option value="">Typ auswählen</option>
+                                    <option value="minecraft">Minecraft</option>
+                                    <option value="mod">Mods</option>
+                                    <option value="resourcepack">Resource Packs</option>
+                                    <option value="jellyfin">Jellyfin Server</option>
+                                    <option value="mcserver">Minecraft Server</option>
+                                    <option value="tool">Tools & Utilities</option>
+                                    <option value="app">Anwendungen</option>
+                                    <option value="other">Sonstiges</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="projectPlatform">Plattform *</label>
+                                <select id="projectPlatform" required>
+                                    <option value="">Plattform auswählen</option>
+                                    <option value="github">GitHub</option>
+                                    <option value="modrinth">Modrinth</option>
+                                    <option value="curseforge">CurseForge</option>
+                                    <option value="other">Andere</option>
+                                    <option value="custom">Eigener Name</option>
+                                </select>
+                                <input type="text" id="projectPlatformCustomName" class="platform-custom-name hidden" placeholder="Eigener Plattformname">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="projectDescription">Beschreibung *</label>
+                            <textarea id="projectDescription" rows="2" required></textarea>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="projectUrl">Projekt URL (Primär) *</label>
+                                <input type="url" id="projectUrl" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="projectImage">Bild URL</label>
+                                <input type="url" id="projectImage">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Zusätzliche Plattformen</label>
+                            <div id="additionalPlatformsContainer" class="additional-platforms">
+                                <div class="platform-link-row">
+                                    <select class="additional-platform-select">
+                                        <option value="">Plattform wählen</option>
+                                        <option value="github">GitHub</option>
+                                        <option value="modrinth">Modrinth</option>
+                                        <option value="curseforge">CurseForge</option>
+                                        <option value="other">Andere</option>
+                                        <option value="custom">Eigener Name</option>
+                                    </select>
+                                    <input type="text" class="additional-platform-name hidden" placeholder="Eigener Plattformname">
+                                    <input type="url" class="additional-platform-url" placeholder="URL eingeben">
+                                    <button type="button" class="btn-icon btn-remove" onclick="removePlatformLink(this)" title="Entfernen">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <button type="button" class="btn btn-secondary" onclick="addPlatformLink()">
+                                <i class="fas fa-plus"></i> Plattform hinzufügen
+                            </button>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="projectDownloads">Downloads</label>
+                                <input type="number" id="projectDownloads" value="0" min="0">
+                            </div>
+                            <div class="form-group">
+                                <label for="projectCategory">Kategorie</label>
+                                <input type="text" id="projectCategory" placeholder="z.B. Mod, Tool, App">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="projectTags">Tags (komma-getrennt)</label>
+                                <input type="text" id="projectTags" placeholder="z.B. minecraft, utility, fun">
+                            </div>
+                            <div class="form-group">
+                                <label>
+                                    <input type="checkbox" id="projectFeatured"> Als Featured markieren
+                                </label>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-plus"></i> Projekt hinzufügen
+                        </button>
+                    </form>
+                </div>
+                <div class="admin-section">
+                    <h3>Projekte verwalten</h3>
+                    <div class="bulk-actions">
+                        <button class="btn btn-secondary" onclick="selectAllProjects()">
+                            <i class="fas fa-check-double"></i> Alle auswählen
+                        </button>
+                        <button class="btn btn-secondary" onclick="deselectAllProjects()">
+                            <i class="fas fa-times"></i> Auswahl aufheben
+                        </button>
+                        <button class="btn btn-danger" onclick="bulkDeleteProjects()">
+                            <i class="fas fa-trash"></i> Ausgewählte löschen
+                        </button>
+                        <button class="btn btn-secondary" onclick="bulkDuplicateProjects()">
+                            <i class="fas fa-copy"></i> Ausgewählte duplizieren
+                        </button>
+                    </div>
+                    <div id="adminProjectsList"></div>
+                </div>
+            </div>
+
+            <!-- Stats Tab -->
+            <div class="admin-tab-content" id="statsTab">
+                <div class="admin-section">
+                    <h3>Statistiken Dashboard</h3>
+                    <div class="stats-dashboard">
+                        <div class="stat-card">
+                            <div class="stat-card-icon">
+                                <i class="fas fa-folder"></i>
+                            </div>
+                            <div class="stat-card-content">
+                                <div class="stat-card-number" id="dashProjectCount">0</div>
+                                <div class="stat-card-label">Projekte</div>
+                                <div class="stat-card-trend positive"><i class="fas fa-arrow-up"></i></div>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-card-icon">
+                                <i class="fas fa-download"></i>
+                            </div>
+                            <div class="stat-card-content">
+                                <div class="stat-card-number" id="dashDownloadCount">0</div>
+                                <div class="stat-card-label">Downloads</div>
+                                <div class="stat-card-trend positive"><i class="fas fa-arrow-up"></i></div>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-card-icon">
+                                <i class="fas fa-users"></i>
+                            </div>
+                            <div class="stat-card-content">
+                                <div class="stat-card-number" id="dashCommunityCount">0</div>
+                                <div class="stat-card-label">Community</div>
+                                <div class="stat-card-trend positive"><i class="fas fa-arrow-up"></i></div>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-card-icon">
+                                <i class="fas fa-eye"></i>
+                            </div>
+                            <div class="stat-card-content">
+                                <div class="stat-card-number" id="dashViewCount">0</div>
+                                <div class="stat-card-label">Seitenaufrufe</div>
+                                <div class="stat-card-trend neutral"><i class="fas fa-minus"></i></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="admin-section">
+                    <h3>Projekt-Statistiken</h3>
+                    <div class="project-stats-chart">
+                        <canvas id="projectStatsChart"></canvas>
+                    </div>
+                    <div class="platform-breakdown">
+                        <h4>Plattform-Verteilung</h4>
+                        <div class="platform-stats" id="platformStats"></div>
+                    </div>
+                </div>
+                <div class="admin-section">
+                    <h3>Statistiken bearbeiten</h3>
+                    <form id="statsForm">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="editDownloads">Gesamt Downloads</label>
+                                <input type="number" id="editDownloads" min="0">
+                            </div>
+                            <div class="form-group">
+                                <label for="editCommunity">Community Größe</label>
+                                <input type="number" id="editCommunity" min="0">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="editViews">Seitenaufrufe</label>
+                                <input type="number" id="editViews" min="0">
+                            </div>
+                            <div class="form-group">
+                                <label for="editFeatured">Featured Projects</label>
+                                <input type="number" id="editFeatured" min="0">
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Statistiken aktualisieren
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Settings Tab -->
+            <div class="admin-tab-content" id="settingsTab">
+                <div class="admin-section">
+                    <h3>Allgemeine Einstellungen</h3>
+                    <form id="settingsForm">
+                        <div class="form-group">
+                            <label for="siteTitle">Seitentitel</label>
+                            <input type="text" id="siteTitle" value="Karlali - Creator">
+                        </div>
+                        <div class="form-group">
+                            <label for="siteDescription">Seitenbeschreibung</label>
+                            <textarea id="siteDescription" rows="2">Karlali - Creator. Entdecke meine Projekte auf GitHub, Modrinth, CurseForge und mehr.</textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>Standard-Theme</label>
+                            <select id="defaultTheme">
+                                <option value="dark">Dark</option>
+                                <option value="light">Light</option>
+                                <option value="high-contrast">High Contrast</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Einstellungen speichern
+                        </button>
+                    </form>
+                </div>
+                <div class="admin-section">
+                    <h3>Sicherheit</h3>
+                    <form id="securityForm">
+                        <div class="form-group">
+                            <label>Login-Methode</label>
+                            <div class="updates-info-card">
+                                <p>Admin-Login laeuft jetzt ueber Google und die Admin-E-Mail-Whitelist. Mitglieder melden sich ebenfalls mit Google an und duerfen nur ihr eigenes Profil bearbeiten.</p>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="sessionTimeout">Session Timeout (Minuten)</label>
+                            <input type="number" id="sessionTimeout" value="30" min="5">
+                        </div>
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="enableAuditLog"> Audit-Log aktivieren
+                            </label>
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-shield-alt"></i> Sicherheitseinstellungen speichern
+                        </button>
+                    </form>
+                </div>
+                <div class="admin-section">
+                    <h3>Backup & Automatisierung</h3>
+                    <form id="backupForm">
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="autoBackup"> Automatisches Backup aktivieren
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label for="backupInterval">Backup-Intervall (Stunden)</label>
+                            <input type="number" id="backupInterval" value="24" min="1">
+                        </div>
+                        <div class="form-group">
+                            <label for="backupRetention">Backup-Aufbewahrung (Tage)</label>
+                            <input type="number" id="backupRetention" value="30" min="1">
+                        </div>
+                        <button type="button" class="btn btn-secondary" onclick="createBackup()">
+                            <i class="fas fa-download"></i> Jetzt Backup erstellen
+                        </button>
+                        <button type="button" class="btn btn-secondary" onclick="showBackupHistory()">
+                            <i class="fas fa-history"></i> Backup-Historie
+                        </button>
+                    </form>
+                </div>
+                <div class="admin-section">
+                    <h3>API Integrationen</h3>
+                    <form id="apiForm">
+                        <div class="form-group">
+                            <label for="discordWebhook">Discord Webhook URL</label>
+                            <input type="url" id="discordWebhook" placeholder="https://discord.com/api/webhooks/...">
+                        </div>
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="discordNotifyNewProject"> Benachrichtigung bei neuem Projekt
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="discordNotifyUpdate"> Benachrichtigung bei Updates
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label for="githubToken">GitHub Personal Access Token (optional)</label>
+                            <input type="password" id="githubToken" placeholder="ghp_xxxxxxxxxxxx">
+                        </div>
+                        <hr style="margin: 1.5rem 0; border: none; border-top: 1px solid var(--border-color);">
+                        <h4 style="margin-top: 1rem; margin-bottom: 1rem;">Discord Updates</h4>
+                        <div class="form-group">
+                            <label for="discordChannelId">Discord Channel ID</label>
+                            <input type="text" id="discordChannelId" placeholder="z.B. 123456789012345678">
+                            <small style="display: block; margin-top: 0.5rem; color: var(--text-secondary);">
+                                👉 Developer Mode in Discord einschalten → Rechtsklick auf Channel → Copy Channel ID
+                            </small>
+                        </div>
+                        <div class="form-group">
+                            <label for="discordToken">Discord Bot Token</label>
+                            <input type="password" id="discordToken" placeholder="Dein Bot Token (geheim!)">
+                            <small style="display: block; margin-top: 0.5rem; color: var(--text-secondary);">
+                                👉 <a href="https://discord.com/developers/applications" target="_blank" style="color: var(--primary-color);">Developer Portal</a> → Bot → Token kopieren
+                            </small>
+                        </div>
+                        <div class="form-group" style="background: var(--secondary-bg); padding: 1rem; border-radius: 8px; border-left: 3px solid var(--primary-color);">
+                            <strong>ℹ️ Wie es funktioniert:</strong>
+                            <p style="margin: 0.5rem 0; font-size: 0.9rem;">
+                                Schreibe Nachrichten in deinen Discord-Channel und sie erscheinen automatisch unter "Neuste Updates" auf der Website!
+                            </p>
+                        </div>
+                        <button type="button" class="btn btn-secondary" onclick="testDiscordConnection()">
+                            <i class="fab fa-discord"></i> Discord verbindung testen
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-plug"></i> Integrationen speichern
+                        </button>
+                    </form>
+                </div>
+                <div class="admin-section">
+                    <h3>Daten</h3>
+                    <div class="data-actions">
+                        <button class="btn btn-secondary" onclick="exportData()">
+                            <i class="fas fa-download"></i> Export
+                        </button>
+                        <button class="btn btn-secondary" onclick="document.getElementById('importInput').click()">
+                            <i class="fas fa-upload"></i> Import
+                        </button>
+                        <input type="file" id="importInput" accept=".json" style="display: none;" onchange="importData(event)">
+                        <button class="btn btn-danger" onclick="clearAllData()">
+                            <i class="fas fa-trash"></i> Alle Daten löschen
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Members Tab -->
+            <div class="admin-tab-content" id="membersTab">
+                <div class="admin-section">
+                    <h3 id="memberFormTitle">Mitglied hinzufügen</h3>
+                    <form id="memberForm">
+                        <input type="hidden" id="memberId">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="memberName">Name *</label>
+                                <input type="text" id="memberName" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="memberRole">Rolle *</label>
+                                <input type="text" id="memberRole" required>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="memberEmail">Google E-Mail</label>
+                                <input type="email" id="memberEmail" placeholder="mitglied@gmail.com">
+                                <small class="admin-field-hint">Wird fuer den Mitglieder-Login genutzt und nur von Admins gesetzt.</small>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="memberImage">Profilbild URL</label>
+                                <input type="url" id="memberImage" placeholder="https://...">
+                                <small id="memberImageHint" class="admin-field-hint">Direkte Bild-URL oder GitHub-`blob`/`tree`-Link einfuegen.</small>
+                                <div id="memberImagePreview" class="member-image-preview"></div>
+                            </div>
+                            <div class="form-group">
+                                <label for="memberAccent">Akzentfarbe</label>
+                                <input type="color" id="memberAccent" value="#818cf8">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="memberIcon">Fallback Icon Klasse</label>
+                                <input type="text" id="memberIcon" placeholder="fas fa-user">
+                            </div>
+                            <div class="form-group">
+                                <label for="memberBio">Kurztext</label>
+                                <textarea id="memberBio" rows="2" placeholder="Kurze Beschreibung für die Mitglieder-Seite"></textarea>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Social Links des Mitglieds</label>
+                            <div id="memberSocialAssignments" class="member-social-assignments"></div>
+                        </div>
+                        <div class="bulk-actions">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> <span id="memberSubmitText">Mitglied speichern</span>
+                            </button>
+                            <button type="button" class="btn btn-secondary" onclick="resetMemberForm()">
+                                <i class="fas fa-rotate-left"></i> Zurücksetzen
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                <div class="admin-section">
+                    <h3>Mitglieder verwalten</h3>
+                    <div id="adminMembersList"></div>
+                </div>
+            </div>
+
+            <!-- Socials Tab -->
+            <div class="admin-tab-content" id="socialsTab">
+                <div class="admin-section">
+                    <h3 id="socialFormTitle">Social-Baustein hinzufügen</h3>
+                    <form id="socialDefinitionForm">
+                        <input type="hidden" id="socialDefinitionId">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="socialDefinitionName">Name *</label>
+                                <input type="text" id="socialDefinitionName" placeholder="z.B. Discord, GitHub, AniList" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="socialDefinitionIcon">Icon Klasse oder Bild-URL *</label>
+                                <input type="text" id="socialDefinitionIcon" placeholder="z.B. fab fa-discord oder https://..." required>
+                            </div>
+                        </div>
+                        <div class="social-definition-preview-panel">
+                            <span class="admin-field-hint">Live-Vorschau</span>
+                            <div id="socialDefinitionPreview" class="social-definition-preview"></div>
+                        </div>
+                        <div class="bulk-actions">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> <span id="socialSubmitText">Social speichern</span>
+                            </button>
+                            <button type="button" class="btn btn-secondary" onclick="resetSocialForm()">
+                                <i class="fas fa-rotate-left"></i> Zurücksetzen
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                <div class="admin-section">
+                    <h3>Social-Bausteine verwalten</h3>
+                    <div id="adminSocialDefinitionsList"></div>
+                </div>
+            </div>
+
+            <div class="admin-tab-content" id="internalTab">
+                <div class="admin-section">
+                    <h3>Internen Reiter bearbeiten</h3>
+                    <form id="internalContentForm">
+                        <div class="form-group">
+                            <label for="memberAreaEditor">Text für den internen Bereich</label>
+                            <textarea id="memberAreaEditor" rows="10" placeholder="Hier kannst du Infos nur für eingeloggte Clan-Mitglieder hinterlegen."></textarea>
+                            <small class="admin-field-hint">Dieser Text wird im Reiter `Intern` für Mitglieder und Admins angezeigt.</small>
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Internen Text speichern
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Activity Tab -->
+            <div class="admin-tab-content" id="activityTab">
+                <div class="admin-section">
+                    <h3>Aktivitätsprotokoll</h3>
+                    <div id="activityLog"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Project Modal -->
+    <div class="modal" id="editProjectModal" role="dialog" aria-modal="true">
+        <div class="modal-content modal-lg">
+            <span class="close" onclick="closeEditModal()" aria-label="Schließen">&times;</span>
+            <h2>Projekt bearbeiten</h2>
+            <form id="editProjectForm">
+                <input type="hidden" id="editProjectId">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="editProjectName">Projekt Name *</label>
+                        <input type="text" id="editProjectName" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="editProjectMember">Mitglied *</label>
+                        <select id="editProjectMember" required></select>
+                    </div>
+                    <div class="form-group">
+                        <label for="editProjectType">Projekt Typ *</label>
+                        <select id="editProjectType" required>
+                            <option value="minecraft">Minecraft</option>
+                            <option value="mod">Mods</option>
+                            <option value="resourcepack">Resource Packs</option>
+                            <option value="jellyfin">Jellyfin Server</option>
+                            <option value="mcserver">Minecraft Server</option>
+                            <option value="tool">Tools & Utilities</option>
+                            <option value="app">Anwendungen</option>
+                            <option value="other">Sonstiges</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="editProjectPlatform">Plattform *</label>
+                        <select id="editProjectPlatform" required>
+                            <option value="github">GitHub</option>
+                            <option value="modrinth">Modrinth</option>
+                            <option value="curseforge">CurseForge</option>
+                            <option value="other">Andere</option>
+                            <option value="custom">Eigener Name</option>
+                        </select>
+                        <input type="text" id="editProjectPlatformCustomName" class="platform-custom-name hidden" placeholder="Eigener Plattformname">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="editProjectDescription">Beschreibung *</label>
+                    <textarea id="editProjectDescription" rows="2" required></textarea>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="editProjectUrl">Projekt URL (Primär) *</label>
+                        <input type="url" id="editProjectUrl" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="editProjectImage">Bild URL</label>
+                        <input type="url" id="editProjectImage">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Zusätzliche Plattformen</label>
+                    <div id="editAdditionalPlatformsContainer" class="additional-platforms">
+                    </div>
+                    <button type="button" class="btn btn-secondary" onclick="addEditPlatformLink()">
+                        <i class="fas fa-plus"></i> Plattform hinzufügen
+                    </button>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="editProjectDownloads">Downloads</label>
+                        <input type="number" id="editProjectDownloads" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label for="editProjectCategory">Kategorie</label>
+                        <input type="text" id="editProjectCategory">
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i> Änderungen speichern
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Update Detail Modal -->
+    <div class="modal" id="updateModal" role="dialog" aria-modal="true">
+        <div class="modal-content modal-lg update-modal-content">
+            <span class="close" onclick="closeUpdateModal()" aria-label="Schließen">&times;</span>
+            <div id="updateModalContent">
+                <div class="update-header">
+                    <div class="update-date" id="updateDate"></div>
+                    <h2 id="updateTitle"></h2>
+                    <div class="update-author" id="updateAuthor"></div>
+                </div>
+                <div class="update-body" id="updateBody"></div>
+                <div class="update-footer">
+                    <div class="update-meta" id="updateMeta"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Legal Modal Container -->
+    <div class="modal" id="legalModal" role="dialog" aria-modal="true">
+        <div class="modal-content modal-lg">
+            <span class="close" onclick="closeLegalModal()" aria-label="Schließen">&times;</span>
+            <div id="legalModalContent"></div>
+        </div>
+    </div>
+
+    <!-- Social Share Modal -->
+    <div class="modal" id="shareModal" role="dialog" aria-modal="true">
+        <div class="modal-content">
+            <span class="close" onclick="closeShareModal()" aria-label="Schließen">&times;</span>
+            <h2>Teilen</h2>
+            <div class="share-buttons">
+                <button class="share-btn twitter" onclick="shareOnTwitter()">
+                    <i class="fab fa-twitter"></i> Twitter
+                </button>
+                <button class="share-btn facebook" onclick="shareOnFacebook()">
+                    <i class="fab fa-facebook"></i> Facebook
+                </button>
+                <button class="share-btn linkedin" onclick="shareOnLinkedIn()">
+                    <i class="fab fa-linkedin"></i> LinkedIn
+                </button>
+                <button class="share-btn whatsapp" onclick="shareOnWhatsApp()">
+                    <i class="fab fa-whatsapp"></i> WhatsApp
+                </button>
+                <button class="share-btn reddit" onclick="shareOnReddit()">
+                    <i class="fab fa-reddit"></i> Reddit
+                </button>
+                <button class="share-btn copy" onclick="copyLink()">
+                    <i class="fas fa-link"></i> Link kopieren
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- QR Code Modal -->
+    <div class="modal" id="qrModal" role="dialog" aria-modal="true">
+        <div class="modal-content">
+            <span class="close" onclick="closeQRModal()" aria-label="Schließen">&times;</span>
+            <h2>QR Code</h2>
+            <div id="qrCodeContainer" class="qr-code-container"></div>
+            <button class="btn btn-primary" onclick="downloadQRCode()">
+                <i class="fas fa-download"></i> QR Code herunterladen
+            </button>
+        </div>
+    </div>
+
+    <!-- Keyboard Shortcuts Modal -->
+    <div class="modal" id="shortcutsModal" role="dialog" aria-modal="true">
+        <div class="modal-content modal-lg">
+            <span class="close" onclick="closeShortcutsModal()" aria-label="Schließen">&times;</span>
+            <h2>Tastaturkürzel</h2>
+            <div class="shortcuts-list">
+                <div class="shortcut-item">
+                    <kbd>Ctrl</kbd> + <kbd>K</kbd>
+                    <span>Fokus Suchfeld</span>
+                </div>
+                <div class="shortcut-item">
+                    <kbd>Ctrl</kbd> + <kbd>N</kbd>
+                    <span>Neues Projekt (Admin)</span>
+                </div>
+                <div class="shortcut-item">
+                    <kbd>Ctrl</kbd> + <kbd>S</kbd>
+                    <span>Speichern</span>
+                </div>
+                <div class="shortcut-item">
+                    <kbd>Ctrl</kbd> + <kbd>E</kbd>
+                    <span>Exportieren</span>
+                </div>
+                <div class="shortcut-item">
+                    <kbd>Ctrl</kbd> + <kbd>I</kbd>
+                    <span>Importieren</span>
+                </div>
+                <div class="shortcut-item">
+                    <kbd>Ctrl</kbd> + <kbd>/</kbd>
+                    <span>Dieses Menü</span>
+                </div>
+                <div class="shortcut-item">
+                    <kbd>Escape</kbd>
+                    <span>Modals schließen</span>
+                </div>
+                <div class="shortcut-item">
+                    <kbd>Ctrl</kbd> + <kbd>D</kbd>
+                    <span>Dark/Light Mode</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tooltip Container -->
+    <div id="tooltip" class="tooltip"></div>
+
+    <script src="i18n.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+    <script src="script.js"></script>
     <script>
-        // ================== KONFIGURATION ================== //
-        // Whitelists
-        const READER_WHITELIST = [
-            "cpamuk6969@gmail.com",
-            "julianradow@gmail.com"
-            "finn.fratzscher@gmail.com"
-            "kutznerdanny404@gmail.com"
-            "kutznerzqsta@gmail.com"
-        ];
-        
-        const ADMIN_WHITELIST = [
-            "cringealiyt@gmail.com"
-        ];
-        
-        // JSONBin.io Konfiguration
-        const JSONBIN_BIN_ID = "686675398960c979a5b663ce";
-        const JSONBIN_API_KEY = "$2a$10$BCaAiskamnm/0uZ12lCllOX6MvFKiS9vY8WzxASNqzj8aQTWLTQ86";
-        
-        // Initialer Text
-        const DEFAULT_TEXT = `
-Willkommen auf dem exklusiven CringeClan Passwort Portal!
-
-Hier sind die neuesten Clan-Infos:
-
-- "Ich starte meine Karriere als DJ... (absolute Katastrophe)"
-- Nächstes Event: Clan-Turnier am 15. Oktober
-- Neue Mitglieder: 3 Bewerbungen diese Woche
-
-Bleibt dran für Updates!
-        `.trim();
-        
-        // Globale Variable für den aktuellen Text
-        let currentText = DEFAULT_TEXT;
-
-        // Google Sign-In Handler
-        async function handleGoogleSignIn(response) {
-            // Token verarbeiten
-            const userData = parseJwt(response.credential);
-            const userEmail = userData.email;
-            const userName = userData.name;
-            
-            document.getElementById("user-name").textContent = userName;
-            
-            // Berechtigungen prüfen
-            const isAdmin = ADMIN_WHITELIST.includes(userEmail);
-            const isReader = isAdmin || READER_WHITELIST.includes(userEmail);
-            
-            if (!isReader) {
-                alert("Zugriff verweigert: Deine E-Mail ist nicht berechtigt");
-                return;
-            }
-            
-            // Anzeigen
-            document.getElementById("auth-section").classList.add("hidden");
-            document.getElementById("content-section").classList.remove("hidden");
-            
-            // Badge anzeigen
-            const badge = document.getElementById("user-badge");
-            if (isAdmin) {
-                badge.classList.remove("hidden");
-                badge.textContent = "Admin";
-                document.getElementById("editor-panel").classList.remove("hidden");
-            } else {
-                badge.classList.remove("hidden");
-                badge.textContent = "Leser";
-                badge.classList.add("reader-badge");
-                badge.classList.remove("admin-badge");
-                
-                // Für Leser: Editor-Panel vollständig ausblenden
-                document.getElementById("editor-panel").classList.add("hidden");
-            }
-            
-            // Text aus JSONBin laden und anzeigen
-            await loadTextContent();
-        }
-        
-        // Text aus JSONBin laden und anzeigen
-        async function loadTextContent() {
-            try {
-                const response = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/latest`, {
-                    headers: {
-                        "X-Master-Key": JSONBIN_API_KEY,
-                        "X-Bin-Meta": "false"
-                    }
-                });
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP Fehler ${response.status}`);
-                }
-                
-                const data = await response.json();
-                currentText = data.content || DEFAULT_TEXT;
-                
-                // Text anzeigen
-                document.getElementById("displayed-text").textContent = currentText;
-                
-                // Editor füllen (nur für Admins)
-                if (!document.getElementById("editor-panel").classList.contains("hidden")) {
-                    document.getElementById("text-editor").value = currentText;
-                }
-                
-            } catch (error) {
-                console.error("JSONBin Fehler:", error);
-                document.getElementById("displayed-text").textContent = "Fehler beim Laden des Inhalts. Bitte versuche es später erneut.";
-                
-                const status = document.getElementById("status-message");
-                status.textContent = "Fehler: " + error.message;
-                status.className = "status-message error";
-                status.classList.remove("hidden");
-            }
-        }
-        
-        // Text in JSONBin aktualisieren
-        document.getElementById("update-text").addEventListener("click", async () => {
-            const newText = document.getElementById("text-editor").value;
-            const status = document.getElementById("status-message");
-            
-            try {
-                // Update zu JSONBin senden
-                const response = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`, {
-                    method: "PUT",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "X-Master-Key": JSONBIN_API_KEY,
-                        "X-Bin-Name": "CringeClan Portal Content"
-                    },
-                    body: JSON.stringify({ content: newText })
-                });
-                
-                if (!response.ok) {
-                    throw new Error(`Fehler ${response.status}`);
-                }
-                
-                // Erfolgsmeldung
-                status.textContent = "Text erfolgreich aktualisiert!";
-                status.className = "status-message success";
-                
-                // Text sofort aktualisieren
-                currentText = newText;
-                document.getElementById("displayed-text").textContent = currentText;
-                
-            } catch (error) {
-                console.error("Speicherfehler:", error);
-                status.textContent = "Fehler beim Speichern: " + error.message;
-                status.className = "status-message error";
-            }
-            
-            status.classList.remove("hidden");
-            setTimeout(() => status.classList.add("hidden"), 3000);
-        });
-        
-        // Helper: JWT decodieren
-        function parseJwt(token) {
-            try {
-                const base64Url = token.split('.')[1];
-                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-                const jsonPayload = decodeURIComponent(
-                    atob(base64)
-                    .split('')
-                    .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
-                    .join('')
-                );
-                return JSON.parse(jsonPayload);
-            } catch (e) {
-                console.error("Token Fehler:", e);
-                return {name: "Benutzer", email: "unbekannt@example.com"};
-            }
-        }
-        
-        // Abmelden
-        document.getElementById("signout-btn").addEventListener("click", () => {
-            document.getElementById("auth-section").classList.remove("hidden");
-            document.getElementById("content-section").classList.add("hidden");
-        });
-        
-        // Beim Start Bin initialisieren
-        window.addEventListener('DOMContentLoaded', async () => {
-            // Stelle sicher, dass der Bin existiert
-            try {
-                const response = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`, {
-                    headers: {
-                        "X-Master-Key": JSONBIN_API_KEY
-                    }
-                });
-                
-                if (response.status === 404) {
-                    // Bin existiert nicht - erstellen
-                    await fetch(`https://api.jsonbin.io/v3/b`, {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/json",
-                            "X-Master-Key": JSONBIN_API_KEY
-                        },
-                        body: JSON.stringify({ content: DEFAULT_TEXT })
+        // Service Worker Registration
+        if ('serviceWorker' in navigator && (location.protocol === 'http:' || location.protocol === 'https:')) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(registration => {
+                        console.log('ServiceWorker registration successful with scope: ', registration.scope);
+                    })
+                    .catch(error => {
+                        console.log('ServiceWorker registration failed: ', error);
                     });
-                }
-            } catch (e) {
-                console.log("Bin existiert bereits");
-            }
-        });
+            });
+        }
     </script>
 </body>
 </html>

@@ -1,0 +1,21 @@
+Apple Touch Icon
+=================
+
+Für die Apple Touch Icon (apple-touch-icon.png) empfehle ich:
+
+- Größe: 180x180 Pixel
+- Format: PNG
+- Hintergrund: Transparent oder die Primärfarbe (#6366f1)
+- Inhalt: Das "K" Logo oder ein Icon deiner Wahl
+
+Du kannst dieses Icon mit Tools wie:
+- Canva
+- Figma
+- Adobe Photoshop
+- Online Favon-Generatoren
+
+erstellen und als "apple-touch-icon.png" im Hauptverzeichnis speichern.
+
+Alternativ kannst du auch Online-Generatoren nutzen:
+- https://favicon.io/
+- https://realfavicongenerator.net/

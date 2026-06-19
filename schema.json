@@ -1,0 +1,25 @@
+{
+  "@context": "https://schema.org",
+  "@type": "Person",
+  "name": "Karlali",
+  "url": "https://karlali.com",
+  "image": "https://karlali.com/profile.jpg",
+  "sameAs": [
+    "https://github.com/karlali",
+    "https://modrinth.com/user/karlali",
+    "https://curseforge.com/members/karlali",
+    "https://discord.gg/karlali",
+    "https://twitter.com/karlali",
+    "https://youtube.com/@karlali"
+  ],
+  "jobTitle": "Creator",
+  "description": "Karlali ist ein kreativer Creator, der digitale Ideen in Wirklichkeit verwandelt. Projekte auf GitHub, Modrinth, CurseForge und mehr.",
+  "knowsAbout": [
+    "Creative Design",
+    "Project Management",
+    "Community Building",
+    "Innovation",
+    "User Experience",
+    "Problem Solving"
+  ]
+}
