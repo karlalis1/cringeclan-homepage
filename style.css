@@ -3593,7 +3593,7 @@ body {
 .member-overview-card {
     display: flex;
     gap: 1.25rem;
-    align-items: flex-start;
+    align-items: stretch;
     padding: 1.6rem;
     background: rgba(30, 28, 36, 0.72);
     border: 1px solid color-mix(in srgb, var(--member-accent, var(--primary-color)) 45%, transparent);
@@ -3619,6 +3619,12 @@ body {
     font-size: 1.45rem;
 }
 
+.member-overview-copy {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+}
+
 .member-overview-copy p {
     margin: 0;
     color: var(--text-secondary);
@@ -3639,6 +3645,10 @@ body {
 
 .member-project-summary {
     margin-bottom: 0.85rem !important;
+}
+
+.member-overview-footer {
+    margin-top: auto;
 }
 
 .member-project-links {

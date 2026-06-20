@@ -1703,9 +1703,11 @@ function renderMembersOverview() {
                 <p class="member-overview-role">${sanitizeInput(member.role)}</p>
                 <h3>${sanitizeInput(member.name)}</h3>
                 ${member.bio ? `<p class="member-overview-bio">${sanitizeInput(member.bio)}</p>` : ''}
-                ${ownedProjects.length ? `<p class="member-project-summary">${ownedProjects.length} Projekt${ownedProjects.length === 1 ? '' : 'e'} verknuepft</p>` : ''}
-                ${buildMemberProjectLinksMarkup(ownedProjects)}
-                ${getMemberSocialLinksMarkup(member)}
+                <div class="member-overview-footer">
+                    ${ownedProjects.length ? `<p class="member-project-summary">${ownedProjects.length} Projekt${ownedProjects.length === 1 ? '' : 'e'} verknuepft</p>` : ''}
+                    ${buildMemberProjectLinksMarkup(ownedProjects)}
+                    ${getMemberSocialLinksMarkup(member)}
+                </div>
             </div>
         `;
         membersGrid.appendChild(card);
