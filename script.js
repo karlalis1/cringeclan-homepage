@@ -64,6 +64,15 @@ const firebaseConfig = {
 const FIRESTORE_CONTENT_COLLECTION = 'siteContent';
 const FIRESTORE_CONTENT_DOC = 'main';
 const FIRESTORE_MEMBERS_COLLECTION = 'members';
+const MEMBER_TAB_PERMISSION_OPTIONS = [
+    { id: 'projects', label: 'Projekte' },
+    { id: 'events', label: 'Ereignisse' },
+    { id: 'stats', label: 'Statistiken' },
+    { id: 'settings', label: 'Einstellungen' },
+    { id: 'socials', label: 'Socials' },
+    { id: 'internal', label: 'Intern' },
+    { id: 'activity', label: 'Aktivität' }
+];
 
 // Project Type Configuration
 const projectTypeConfig = {
@@ -300,6 +309,60 @@ function hasClanAccess() {
     return authState.role === 'admin' || authState.role === 'member';
 }
 
+function sanitizeTabPermissions(tabPermissions) {
+    const allowedTabs = new Set(MEMBER_TAB_PERMISSION_OPTIONS.map(option => option.id));
+    return Array.isArray(tabPermissions)
+        ? [...new Set(tabPermissions.filter(tabId => allowedTabs.has(tabId)))]
+        : [];
+}
+
+function getMemberTabPermissions(memberId = authState.memberId) {
+    if (!memberId) {
+        return [];
+    }
+
+    const member = clanMembers.find(entry => entry.id === memberId);
+    return sanitizeTabPermissions(member?.tabPermissions);
+}
+
+function canAccessAdminTab(tabId) {
+    if (authState.role === 'admin') {
+        return true;
+    }
+
+    if (authState.role !== 'member') {
+        return false;
+    }
+
+    if (tabId === 'members') {
+        return true;
+    }
+
+    return getMemberTabPermissions().includes(tabId);
+}
+
+function getAvailableAdminTabs() {
+    return ['projects', 'events', 'stats', 'settings', 'members', 'socials', 'internal', 'activity']
+        .filter(tabId => canAccessAdminTab(tabId));
+}
+
+function getDefaultAdminTab() {
+    return getAvailableAdminTabs()[0] || 'members';
+}
+
+function requireAdminTabAccess(tabId, customMessage = '') {
+    if (canAccessAdminTab(tabId)) {
+        return true;
+    }
+
+    showToast(customMessage || `Du hast keine Berechtigung fuer den Bereich ${tabId}`, 'error');
+    return false;
+}
+
+function canSyncSharedContent() {
+    return authState.role === 'admin' || (authState.role === 'member' && getMemberTabPermissions().length > 0);
+}
+
 function canEditMember(memberId) {
     return authState.role === 'admin' || (authState.role === 'member' && authState.memberId === memberId);
 }
@@ -371,6 +434,46 @@ function renderInternalContent() {
     content.classList.toggle('internal-content-empty', !text);
 }
 
+function renderMemberTabPermissions(member = null) {
+    const container = document.getElementById('memberTabPermissions');
+    if (!container) {
+        return;
+    }
+
+    const selectedPermissions = new Set(sanitizeTabPermissions(member?.tabPermissions));
+    const disabled = authState.role !== 'admin';
+
+    container.innerHTML = MEMBER_TAB_PERMISSION_OPTIONS.map(option => `
+        <label class="member-tab-permission-option ${disabled ? 'is-disabled' : ''}">
+            <input
+                type="checkbox"
+                class="member-tab-permission-checkbox"
+                value="${option.id}"
+                ${selectedPermissions.has(option.id) ? 'checked' : ''}
+                ${disabled ? 'disabled' : ''}
+            >
+            <span>${option.label}</span>
+        </label>
+    `).join('');
+}
+
+function collectMemberTabPermissions() {
+    return Array.from(document.querySelectorAll('.member-tab-permission-checkbox:checked'))
+        .map(input => input.value);
+}
+
+function activateAdminTab(tabId) {
+    if (!canAccessAdminTab(tabId)) {
+        tabId = getDefaultAdminTab();
+    }
+
+    document.querySelectorAll('.admin-tab').forEach(tab => tab.classList.remove('active'));
+    document.querySelectorAll('.admin-tab-content').forEach(content => content.classList.remove('active'));
+
+    document.querySelector(`.admin-tab[data-tab="${tabId}"]`)?.classList.add('active');
+    document.getElementById(`${tabId}Tab`)?.classList.add('active');
+}
+
 function updateClanAccessView() {
     const hasAccess = hasClanAccess();
 
@@ -392,13 +495,14 @@ function applyPermissionView() {
     const membersTabButton = document.querySelector('.admin-tab[data-tab="members"]');
     const membersList = document.getElementById('adminMembersList');
     const memberEmailInput = document.getElementById('memberEmail');
+    const memberPriorityInput = document.getElementById('memberPriority');
+    const memberTabPermissions = document.querySelectorAll('.member-tab-permission-checkbox');
     const adminHeaderButtons = document.querySelectorAll('.admin-header-actions > button:not(#authSignOutButton)');
 
     updateClanAccessView();
 
     adminTabs.forEach(tab => {
-        const isMembersTab = tab.dataset.tab === 'members';
-        tab.classList.toggle('hidden', authState.role === 'member' && !isMembersTab);
+        tab.classList.toggle('hidden', !canAccessAdminTab(tab.dataset.tab));
     });
 
     if (membersList) {
@@ -409,18 +513,28 @@ function applyPermissionView() {
         memberEmailInput.disabled = authState.role !== 'admin';
     }
 
+    if (memberPriorityInput) {
+        memberPriorityInput.disabled = authState.role !== 'admin';
+    }
+
+    memberTabPermissions.forEach(input => {
+        input.disabled = authState.role !== 'admin';
+    });
+
     adminHeaderButtons.forEach(button => {
         button.classList.toggle('hidden', authState.role === 'member');
     });
 
     if (authState.role === 'member') {
-        document.querySelectorAll('.admin-tab-content').forEach(content => content.classList.remove('active'));
-        membersTabButton?.classList.add('active');
-        document.getElementById('membersTab')?.classList.add('active');
+        const activeTab = document.querySelector('.admin-tab.active')?.dataset.tab;
+        activateAdminTab(activeTab && canAccessAdminTab(activeTab) ? activeTab : getDefaultAdminTab());
 
         if (authState.memberId) {
             editMember(authState.memberId);
         }
+    } else if (authState.role === 'admin' && !document.querySelector('.admin-tab.active')) {
+        membersTabButton?.classList.add('active');
+        document.getElementById('membersTab')?.classList.add('active');
     }
 }
 
@@ -446,6 +560,7 @@ function applyAuthState(user) {
 function normalizeMember(member, index = 0) {
     const fallbackMember = defaultClanMembers[index % defaultClanMembers.length] || defaultClanMembers[0];
     const safeName = member?.name?.trim() || fallbackMember.name;
+    const parsedPriority = Number.parseInt(member?.priority, 10);
     const socials = Array.isArray(member?.socials)
         ? member.socials
             .filter(entry => entry?.socialId && entry?.url && validateUrl(entry.url))
@@ -461,9 +576,24 @@ function normalizeMember(member, index = 0) {
         icon: sanitizeIconClass(member?.icon || fallbackMember.icon, 'fas fa-user'),
         image: normalizeImageUrl(member?.image || fallbackMember.image || ''),
         bio: member?.bio?.trim() || fallbackMember.bio || '',
+        priority: Number.isFinite(parsedPriority) && parsedPriority > 0 ? parsedPriority : index + 1,
+        tabPermissions: sanitizeTabPermissions(member?.tabPermissions),
         initials: safeName.slice(0, 2).toUpperCase(),
         socials
     };
+}
+
+function getSortedClanMembers(members = clanMembers) {
+    return [...members].sort((a, b) => {
+        const priorityA = Number.isFinite(a?.priority) ? a.priority : Number.MAX_SAFE_INTEGER;
+        const priorityB = Number.isFinite(b?.priority) ? b.priority : Number.MAX_SAFE_INTEGER;
+
+        if (priorityA !== priorityB) {
+            return priorityA - priorityB;
+        }
+
+        return (a?.name || '').localeCompare(b?.name || '', 'de');
+    });
 }
 
 function getMemberAvatarMarkup(member, className = 'member-avatar') {
@@ -560,7 +690,7 @@ function collectMemberSocialAssignments() {
 }
 
 function getMemberOptionsHtml(selectedId = '') {
-    return clanMembers.map(member => `
+    return getSortedClanMembers().map(member => `
         <option value="${member.id}" ${member.id === selectedId ? 'selected' : ''}>${member.name} (${member.role})</option>
     `).join('');
 }
@@ -941,7 +1071,7 @@ function getServerTimestamp() {
 }
 
 async function syncAllSiteDataToFirestore() {
-    if (!firebaseDb || !canManageAllContent()) {
+    if (!firebaseDb || !canSyncSharedContent()) {
         return;
     }
 
@@ -1003,7 +1133,7 @@ async function saveDataToFirestore() {
     }
 
     try {
-        if (canManageAllContent()) {
+        if (canSyncSharedContent()) {
             await syncAllSiteDataToFirestore();
         } else if (authState.role === 'member') {
             await syncCurrentMemberToFirestore();
@@ -1560,7 +1690,7 @@ function renderMembersOverview() {
 
     membersGrid.innerHTML = '';
 
-    clanMembers.forEach(member => {
+    getSortedClanMembers().forEach(member => {
         const ownedProjects = projects.filter(project => project.ownerId === member.id);
         const card = document.createElement('article');
         card.className = 'member-overview-card';
@@ -1573,7 +1703,7 @@ function renderMembersOverview() {
                 <p class="member-overview-role">${sanitizeInput(member.role)}</p>
                 <h3>${sanitizeInput(member.name)}</h3>
                 ${member.bio ? `<p class="member-overview-bio">${sanitizeInput(member.bio)}</p>` : ''}
-                <p class="member-project-summary">${ownedProjects.length ? `${ownedProjects.length} Projekt${ownedProjects.length === 1 ? '' : 'e'} verknuepft` : 'Noch keine Projekte eingetragen.'}</p>
+                ${ownedProjects.length ? `<p class="member-project-summary">${ownedProjects.length} Projekt${ownedProjects.length === 1 ? '' : 'e'} verknuepft</p>` : ''}
                 ${buildMemberProjectLinksMarkup(ownedProjects)}
                 ${getMemberSocialLinksMarkup(member)}
             </div>
@@ -1694,12 +1824,20 @@ function trackProjectView(projectId) {
 // ========================================
 
 function selectAllProjects() {
+    if (!requireAdminTabAccess('projects', 'Du darfst keine Projekte bearbeiten')) {
+        return;
+    }
+
     selectedProjects = projects.map(p => p.id);
     updateAdminProjectSelection();
     showToast('Alle Projekte ausgewählt', 'info');
 }
 
 function deselectAllProjects() {
+    if (!requireAdminTabAccess('projects', 'Du darfst keine Projekte bearbeiten')) {
+        return;
+    }
+
     selectedProjects = [];
     updateAdminProjectSelection();
     showToast('Auswahl aufgehoben', 'info');
@@ -1716,6 +1854,10 @@ function updateAdminProjectSelection() {
 }
 
 function bulkDeleteProjects() {
+    if (!requireAdminTabAccess('projects', 'Du darfst keine Projekte bearbeiten')) {
+        return;
+    }
+
     if (selectedProjects.length === 0) {
         showToast('Keine Projekte ausgewählt', 'warning');
         return;
@@ -1733,6 +1875,10 @@ function bulkDeleteProjects() {
 }
 
 function bulkDuplicateProjects() {
+    if (!requireAdminTabAccess('projects', 'Du darfst keine Projekte bearbeiten')) {
+        return;
+    }
+
     if (selectedProjects.length === 0) {
         showToast('Keine Projekte ausgewählt', 'warning');
         return;
@@ -1907,6 +2053,7 @@ function openAdminPanel() {
     loadActivityLog();
     loadSettings();
     applyPermissionView();
+    activateAdminTab(getDefaultAdminTab());
     startSessionTimeout();
 }
 
@@ -1939,6 +2086,10 @@ function resetSessionTimeout() {
 }
 
 function loadAdminProjects() {
+    if (!canAccessAdminTab('projects')) {
+        return;
+    }
+
     const list = document.getElementById('adminProjectsList');
     list.innerHTML = '';
     
@@ -1982,8 +2133,10 @@ function resetMemberForm() {
     document.getElementById('memberId').value = authState.role === 'member' ? authState.memberId || '' : '';
     document.getElementById('memberAccent').value = '#818cf8';
     document.getElementById('memberIcon').value = 'fas fa-user';
+    document.getElementById('memberPriority').value = getSortedClanMembers().length + 1;
     document.getElementById('memberFormTitle').textContent = authState.role === 'member' ? 'Mein Profil bearbeiten' : 'Mitglied hinzufügen';
     document.getElementById('memberSubmitText').textContent = authState.role === 'member' ? 'Profil speichern' : 'Mitglied speichern';
+    renderMemberTabPermissions();
     renderMemberSocialAssignments();
     updateMemberImagePreview('');
     updateAllMemberSocialAssignmentPreviews();
@@ -2123,7 +2276,7 @@ function loadAdminMembers() {
 
     const visibleMembers = authState.role === 'member'
         ? clanMembers.filter(member => member.id === authState.memberId)
-        : clanMembers;
+        : getSortedClanMembers();
 
     visibleMembers.forEach(member => {
         const projectCount = projects.filter(project => project.ownerId === member.id).length;
@@ -2135,8 +2288,9 @@ function loadAdminMembers() {
             </div>
             <div class="admin-member-info">
                 <strong>${sanitizeInput(member.name)}</strong>
-                <p>${sanitizeInput(member.role)} · ${projectCount} Projekt${projectCount === 1 ? '' : 'e'}</p>
+                <p>${sanitizeInput(member.role)} · Priorität ${member.priority || '-'} · ${projectCount} Projekt${projectCount === 1 ? '' : 'e'}</p>
                 ${member.bio ? `<small>${sanitizeInput(member.bio)}</small>` : ''}
+                ${member.tabPermissions?.length ? `<small>Reiter: ${member.tabPermissions.map(tab => sanitizeInput(MEMBER_TAB_PERMISSION_OPTIONS.find(option => option.id === tab)?.label || tab)).join(', ')}</small>` : ''}
             </div>
             <div class="admin-member-actions">
                 <button class="btn-edit" onclick="editMember('${member.id}')" title="Bearbeiten" ${canEditMember(member.id) ? '' : 'disabled'}>
@@ -2149,6 +2303,10 @@ function loadAdminMembers() {
 }
 
 function loadAdminEvents() {
+    if (!canAccessAdminTab('events')) {
+        return;
+    }
+
     const list = document.getElementById('adminEventsList');
     if (!list) return;
 
@@ -2184,6 +2342,10 @@ function loadAdminEvents() {
 }
 
 function loadAdminSocials() {
+    if (!canAccessAdminTab('socials')) {
+        return;
+    }
+
     const list = document.getElementById('adminSocialDefinitionsList');
     if (!list) return;
 
@@ -2220,6 +2382,10 @@ function loadAdminSocials() {
 }
 
 function editSocialDefinition(socialId) {
+    if (!requireAdminTabAccess('socials', 'Du darfst Socials nicht bearbeiten')) {
+        return;
+    }
+
     const definition = getSocialDefinitionById(socialId);
     if (!definition) return;
 
@@ -2232,6 +2398,10 @@ function editSocialDefinition(socialId) {
 }
 
 function deleteSocialDefinition(socialId) {
+    if (!requireAdminTabAccess('socials', 'Du darfst Socials nicht bearbeiten')) {
+        return;
+    }
+
     const definition = getSocialDefinitionById(socialId);
     if (!definition) return;
 
@@ -2255,6 +2425,10 @@ function deleteSocialDefinition(socialId) {
 
 function handleSocialDefinitionSave(e) {
     e.preventDefault();
+
+    if (!requireAdminTabAccess('socials', 'Du darfst Socials nicht bearbeiten')) {
+        return;
+    }
 
     const socialId = document.getElementById('socialDefinitionId').value.trim();
     const name = document.getElementById('socialDefinitionName').value.trim();
@@ -2308,6 +2482,8 @@ function editMember(memberId) {
     document.getElementById('memberAccent').value = member.accent || '#818cf8';
     document.getElementById('memberIcon').value = member.icon || 'fas fa-user';
     document.getElementById('memberBio').value = member.bio || '';
+    document.getElementById('memberPriority').value = member.priority || '';
+    renderMemberTabPermissions(member);
     document.getElementById('memberFormTitle').textContent = authState.role === 'member' ? 'Mein Profil bearbeiten' : 'Mitglied bearbeiten';
     document.getElementById('memberSubmitText').textContent = authState.role === 'member' ? 'Profil speichern' : 'Änderungen speichern';
     renderMemberSocialAssignments(member);
@@ -2327,6 +2503,11 @@ function handleMemberSave(e) {
     const accent = document.getElementById('memberAccent').value || '#818cf8';
     const icon = document.getElementById('memberIcon').value.trim() || 'fas fa-user';
     const bio = document.getElementById('memberBio').value.trim();
+    const currentMember = getMemberById(memberId);
+    const priorityInput = Number.parseInt(document.getElementById('memberPriority').value, 10);
+    const tabPermissions = authState.role === 'admin'
+        ? collectMemberTabPermissions()
+        : currentMember?.tabPermissions;
     let socials = [];
 
     if (!name || !role) {
@@ -2364,12 +2545,16 @@ function handleMemberSave(e) {
     const normalizedMember = normalizeMember({
         id: memberId || `member-${Date.now()}`,
         name,
-        email: authState.role === 'admin' ? emailInput : normalizeEmail(getMemberById(memberId)?.email || authState.email),
+        email: authState.role === 'admin' ? emailInput : normalizeEmail(currentMember?.email || authState.email),
         role,
         image,
         accent,
         icon,
         bio,
+        priority: authState.role === 'admin'
+            ? (Number.isFinite(priorityInput) && priorityInput > 0 ? priorityInput : getSortedClanMembers().length + 1)
+            : currentMember?.priority,
+        tabPermissions,
         socials
     }, clanMembers.length);
 
@@ -2424,6 +2609,10 @@ function duplicateProject(projectId) {
 }
 
 function loadAdminStats() {
+    if (!canAccessAdminTab('stats')) {
+        return;
+    }
+
     document.getElementById('editDownloads').value = stats.downloads;
     document.getElementById('editCommunity').value = stats.community;
     document.getElementById('editViews').value = stats.views || 0;
@@ -2528,6 +2717,10 @@ function drawStatsChart() {
 }
 
 function loadActivityLog() {
+    if (!canAccessAdminTab('activity')) {
+        return;
+    }
+
     const logContainer = document.getElementById('activityLog');
     logContainer.innerHTML = '';
     
@@ -2575,6 +2768,10 @@ function loadActivityLog() {
 }
 
 function loadSettings() {
+    if (!canAccessAdminTab('settings') && !canAccessAdminTab('internal')) {
+        return;
+    }
+
     document.getElementById('siteTitle').value = settings.siteTitle;
     document.getElementById('siteDescription').value = settings.siteDescription || '';
     document.getElementById('memberAreaEditor').value = settings.memberAreaText || '';
@@ -2673,6 +2870,10 @@ function loadAdditionalPlatforms(project) {
 
 function handleAddProject(e) {
     e.preventDefault();
+
+    if (!requireAdminTabAccess('projects', 'Du darfst keine Projekte bearbeiten')) {
+        return;
+    }
     
     const name = document.getElementById('projectName').value.trim();
     const ownerId = document.getElementById('projectMember').value;
@@ -2751,6 +2952,10 @@ function handleAddProject(e) {
 }
 
 function deleteProject(id) {
+    if (!requireAdminTabAccess('projects', 'Du darfst keine Projekte bearbeiten')) {
+        return;
+    }
+
     const project = projects.find(p => p.id === id);
     if (confirm(`Möchtest du das Projekt "${project.name}" wirklich löschen?`)) {
         projects = projects.filter(p => p.id !== id);
@@ -2767,6 +2972,10 @@ function deleteProject(id) {
 }
 
 function editProject(id) {
+    if (!requireAdminTabAccess('projects', 'Du darfst keine Projekte bearbeiten')) {
+        return;
+    }
+
     const project = projects.find(p => p.id === id);
     if (!project) return;
     
@@ -2803,6 +3012,10 @@ function closeEditModal() {
 
 function handleEditProject(e) {
     e.preventDefault();
+
+    if (!requireAdminTabAccess('projects', 'Du darfst keine Projekte bearbeiten')) {
+        return;
+    }
     
     const id = parseInt(document.getElementById('editProjectId').value);
     const projectIndex = projects.findIndex(p => p.id === id);
@@ -2883,7 +3096,7 @@ function handleEditProject(e) {
 }
 
 function editEvent(eventId) {
-    if (!requireAdminAccess()) {
+    if (!requireAdminTabAccess('events', 'Du darfst keine Ereignisse bearbeiten')) {
         return;
     }
 
@@ -2910,7 +3123,7 @@ function editEvent(eventId) {
 }
 
 function deleteEvent(eventId) {
-    if (!requireAdminAccess()) {
+    if (!requireAdminTabAccess('events', 'Du darfst keine Ereignisse bearbeiten')) {
         return;
     }
 
@@ -2935,7 +3148,7 @@ function deleteEvent(eventId) {
 function handleEventSave(e) {
     e.preventDefault();
 
-    if (!requireAdminAccess()) {
+    if (!requireAdminTabAccess('events', 'Du darfst keine Ereignisse bearbeiten')) {
         return;
     }
 
@@ -2981,6 +3194,10 @@ function handleEventSave(e) {
 
 function handleStatsUpdate(e) {
     e.preventDefault();
+
+    if (!requireAdminTabAccess('stats', 'Du darfst Statistiken nicht bearbeiten')) {
+        return;
+    }
     
     stats.downloads = parseInt(document.getElementById('editDownloads').value) || 0;
     stats.community = parseInt(document.getElementById('editCommunity').value) || 0;
@@ -2997,6 +3214,10 @@ function handleStatsUpdate(e) {
 
 function handleSettingsUpdate(e) {
     e.preventDefault();
+
+    if (!requireAdminTabAccess('settings', 'Du darfst Einstellungen nicht bearbeiten')) {
+        return;
+    }
     
     const siteTitle = document.getElementById('siteTitle').value.trim();
     const siteDescription = document.getElementById('siteDescription').value.trim();
@@ -3026,7 +3247,7 @@ function handleSettingsUpdate(e) {
 function handleInternalContentSave(e) {
     e.preventDefault();
 
-    if (!requireAdminAccess()) {
+    if (!requireAdminTabAccess('internal', 'Du darfst den internen Bereich nicht bearbeiten')) {
         return;
     }
 
@@ -3039,6 +3260,10 @@ function handleInternalContentSave(e) {
 
 function handleSecurityUpdate(e) {
     e.preventDefault();
+
+    if (!requireAdminTabAccess('settings', 'Du darfst Sicherheitseinstellungen nicht bearbeiten')) {
+        return;
+    }
     
     const sessionTimeout = parseInt(document.getElementById('sessionTimeout').value) || 30;
     const enableAuditLog = document.getElementById('enableAuditLog').checked;
@@ -3053,6 +3278,10 @@ function handleSecurityUpdate(e) {
 
 function handleBackupSettings(e) {
     e.preventDefault();
+
+    if (!requireAdminTabAccess('settings', 'Du darfst Backup-Einstellungen nicht bearbeiten')) {
+        return;
+    }
     
     settings.autoBackup = document.getElementById('autoBackup').checked;
     settings.backupInterval = parseInt(document.getElementById('backupInterval').value) || 24;
@@ -3070,6 +3299,10 @@ function handleBackupSettings(e) {
 
 function handleAPIIntegration(e) {
     e.preventDefault();
+
+    if (!requireAdminTabAccess('settings', 'Du darfst Integrationen nicht bearbeiten')) {
+        return;
+    }
     
     settings.discordWebhook = document.getElementById('discordWebhook').value.trim();
     settings.discordNotifyNewProject = document.getElementById('discordNotifyNewProject').checked;
@@ -3184,7 +3417,7 @@ async function sendDiscordNotification(logEntry) {
     if (!settings.discordWebhook) return;
     
     const embed = {
-        title: 'Karlali Landing Page Activity',
+        title: 'Cringeclan Page Activity',
         description: logEntry.details,
         color: 0x6366f1,
         timestamp: logEntry.timestamp,
@@ -3299,8 +3532,8 @@ async function testDiscordWebhook() {
     }
     
     const embed = {
-        title: 'Test Notification',
-        description: 'Dies ist eine Test-Benachrichtigung von der Karlali Landing Page.',
+        title: 'Cringeclan Test-Benachrichtigung',
+        description: 'Dies ist eine Test-Benachrichtigung von der Cringeclan Page.',
         color: 0x10b981,
         timestamp: new Date().toISOString()
     };
@@ -3392,40 +3625,36 @@ function copyLink() {
 function showQRCode(projectId) {
     const project = projects.find(p => p.id === projectId);
     if (!project) return;
-    
+
     currentQRProject = project;
     const container = document.getElementById('qrCodeContainer');
-    
-    // Simple QR code generation using canvas
-    const canvas = document.createElement('canvas');
-    canvas.width = 200;
-    canvas.height = 200;
-    const ctx = canvas.getContext('2d');
-    
-    // Draw simple pattern (in production, use a proper QR code library)
-    ctx.fillStyle = 'white';
-    ctx.fillRect(0, 0, 200, 200);
-    
-    ctx.fillStyle = '#6366f1';
-    ctx.fillRect(10, 10, 60, 60);
-    ctx.fillRect(130, 10, 60, 60);
-    ctx.fillRect(10, 130, 60, 60);
-    
-    ctx.fillStyle = '#8b5cf6';
-    ctx.fillRect(20, 20, 40, 40);
-    ctx.fillRect(140, 20, 40, 40);
-    ctx.fillRect(20, 140, 40, 40);
-    
-    // Add URL text
-    ctx.fillStyle = '#333';
-    ctx.font = '10px Arial';
-    ctx.textAlign = 'center';
     const primaryUrl = getPrimaryProjectUrl(project);
-    ctx.fillText(primaryUrl.substring(0, 30) + '...', 100, 190);
-    
+
+    if (!container) {
+        return;
+    }
+
+    if (!primaryUrl) {
+        showToast('Dieses Projekt hat keine gueltige URL fuer einen QR-Code', 'error');
+        return;
+    }
+
     container.innerHTML = '';
-    container.appendChild(canvas);
-    
+
+    if (typeof QRCode === 'undefined') {
+        showToast('QR-Code-Bibliothek konnte nicht geladen werden', 'error');
+        return;
+    }
+
+    new QRCode(container, {
+        text: primaryUrl,
+        width: 220,
+        height: 220,
+        colorDark: '#000000',
+        colorLight: '#ffffff',
+        correctLevel: QRCode.CorrectLevel.M
+    });
+
     document.getElementById('qrModal').style.display = 'block';
 }
 
@@ -3435,12 +3664,25 @@ function closeQRModal() {
 
 function downloadQRCode() {
     const canvas = document.querySelector('#qrCodeContainer canvas');
+    const image = document.querySelector('#qrCodeContainer img');
+
     if (canvas) {
         const link = document.createElement('a');
         link.download = `qr-${currentQRProject?.name || 'project'}.png`;
         link.href = canvas.toDataURL();
         link.click();
+        return;
     }
+
+    if (image?.src) {
+        const link = document.createElement('a');
+        link.download = `qr-${currentQRProject?.name || 'project'}.png`;
+        link.href = image.src;
+        link.click();
+        return;
+    }
+
+    showToast('Es ist aktuell kein QR-Code zum Herunterladen vorhanden', 'warning');
 }
 
 // ========================================
@@ -3717,16 +3959,12 @@ function handleClanTabClick(event) {
 
 function handleAdminTabs(e) {
     if (e.target.classList.contains('admin-tab')) {
-        if (authState.role === 'member' && e.target.dataset.tab !== 'members') {
+        if (!canAccessAdminTab(e.target.dataset.tab)) {
             return;
         }
 
-        document.querySelectorAll('.admin-tab').forEach(tab => tab.classList.remove('active'));
-        document.querySelectorAll('.admin-tab-content').forEach(content => content.classList.remove('active'));
-        
-        e.target.classList.add('active');
         const tabId = e.target.dataset.tab;
-        document.getElementById(`${tabId}Tab`).classList.add('active');
+        activateAdminTab(tabId);
         
         resetSessionTimeout();
     }
