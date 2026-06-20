@@ -742,6 +742,7 @@ function normalizeProject(project, index = 0) {
 
 function normalizeEvent(event, index = 0) {
     const fallbackMember = clanMembers[index % clanMembers.length] || clanMembers[0];
+    const hasTime = event?.hasTime !== false;
 
     return {
         id: event.id || `event-${Date.now()}-${index}`,
@@ -751,7 +752,8 @@ function normalizeEvent(event, index = 0) {
         description: event.description?.trim() || 'Noch keine Beschreibung vorhanden.',
         location: event.location?.trim() || 'Wird noch bekannt gegeben',
         hostId: event.hostId || fallbackMember?.id || 'cringekarl',
-        link: event.link || 'https://discord.gg/pmZWDGFz'
+        link: event.link || 'https://discord.gg/pmZWDGFz',
+        hasTime
     };
 }
 
@@ -772,8 +774,37 @@ function formatDateTimeLocalValue(value) {
 function getUpcomingEvents() {
     const now = Date.now();
     return events
-        .filter(event => new Date(event.date).getTime() >= now)
-        .sort((a, b) => new Date(a.date) - new Date(b.date));
+        .filter(event => event.hasTime === false || new Date(event.date).getTime() >= now)
+        .sort((a, b) => {
+            if (a.hasTime === false && b.hasTime !== false) {
+                return -1;
+            }
+
+            if (a.hasTime !== false && b.hasTime === false) {
+                return 1;
+            }
+
+            return new Date(a.date) - new Date(b.date);
+        });
+}
+
+function syncEventTimingField(forceState = null) {
+    const noTimeInput = document.getElementById('eventNoTime');
+    const dateInput = document.getElementById('eventDate');
+    const dateLabel = document.querySelector('label[for="eventDate"]');
+
+    if (!noTimeInput || !dateInput) {
+        return;
+    }
+
+    const isWithoutTime = forceState ?? noTimeInput.checked;
+    noTimeInput.checked = Boolean(isWithoutTime);
+    dateInput.disabled = Boolean(isWithoutTime);
+    dateInput.required = !isWithoutTime;
+
+    if (dateLabel) {
+        dateLabel.textContent = isWithoutTime ? 'Datum und Uhrzeit (optional)' : 'Datum und Uhrzeit *';
+    }
 }
 
 function getPlatformDisplayName(platform) {
@@ -1785,17 +1816,23 @@ function renderEventsOverview() {
     upcomingEvents.forEach(event => {
         const host = getMemberById(event.hostId);
         const date = new Date(event.date);
+        const dateLabel = event.hasTime === false
+            ? 'Dauerhaft'
+            : date.toLocaleDateString('de-DE', { day: '2-digit', month: 'long', year: 'numeric' });
+        const timingMeta = event.hasTime === false
+            ? '<span><i class="fas fa-infinity"></i> Dauerhaft aktiv</span>'
+            : `<span><i class="fas fa-clock"></i> ${date.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })} Uhr</span>`;
         const article = document.createElement('article');
         article.className = 'event-card';
         article.innerHTML = `
             <div class="event-card-header">
                 <span class="event-type">${sanitizeInput(event.type)}</span>
-                <span class="event-date">${date.toLocaleDateString('de-DE', { day: '2-digit', month: 'long', year: 'numeric' })}</span>
+                <span class="event-date">${dateLabel}</span>
             </div>
             <h3>${sanitizeInput(event.title)}</h3>
             <p class="event-description">${sanitizeInput(event.description)}</p>
             <div class="event-meta">
-                <span><i class="fas fa-clock"></i> ${date.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })} Uhr</span>
+                ${timingMeta}
                 <span><i class="fas fa-location-dot"></i> ${sanitizeInput(event.location)}</span>
             </div>
             <div class="event-host">
@@ -2155,6 +2192,7 @@ function resetEventForm() {
     document.getElementById('eventDate').value = formatDateTimeLocalValue(getFutureDateISO(7, 19, 0));
     document.getElementById('eventHost').value = clanMembers[0]?.id || 'cringekarl';
     document.getElementById('eventLink').value = 'https://discord.gg/pmZWDGFz';
+    syncEventTimingField(false);
 }
 
 function resetSocialForm() {
@@ -2322,12 +2360,15 @@ function loadAdminEvents() {
     const sortedEvents = [...events].sort((a, b) => new Date(a.date) - new Date(b.date));
     sortedEvents.forEach(event => {
         const host = getMemberById(event.hostId);
+        const scheduleLabel = event.hasTime === false
+            ? 'Dauerhaft'
+            : new Date(event.date).toLocaleString('de-DE');
         const item = document.createElement('div');
         item.className = 'admin-event-item';
         item.innerHTML = `
             <div class="admin-event-info">
                 <strong>${sanitizeInput(event.title)}</strong>
-                <p>${sanitizeInput(event.type)} · ${new Date(event.date).toLocaleString('de-DE')}</p>
+                <p>${sanitizeInput(event.type)} · ${scheduleLabel}</p>
                 <small>${sanitizeInput(event.location)} · ${sanitizeInput(host.name)}</small>
             </div>
             <div class="admin-event-actions">
@@ -3116,12 +3157,14 @@ function editEvent(eventId) {
     document.getElementById('eventTitle').value = event.title;
     document.getElementById('eventType').value = event.type;
     document.getElementById('eventDate').value = formatDateTimeLocalValue(event.date);
+    document.getElementById('eventNoTime').checked = event.hasTime === false;
     document.getElementById('eventHost').value = event.hostId || 'cringekarl';
     document.getElementById('eventLocation').value = event.location || '';
     document.getElementById('eventLink').value = event.link || '';
     document.getElementById('eventDescription').value = event.description || '';
     document.getElementById('eventFormTitle').textContent = 'Ereignis bearbeiten';
     document.getElementById('eventSubmitText').textContent = 'Änderungen speichern';
+    syncEventTimingField(event.hasTime === false);
 }
 
 function deleteEvent(eventId) {
@@ -3158,12 +3201,13 @@ function handleEventSave(e) {
     const title = document.getElementById('eventTitle').value.trim();
     const type = document.getElementById('eventType').value.trim();
     const dateInput = document.getElementById('eventDate').value;
+    const withoutTime = document.getElementById('eventNoTime').checked;
     const hostId = document.getElementById('eventHost').value;
     const location = document.getElementById('eventLocation').value.trim();
     const link = document.getElementById('eventLink').value.trim() || 'https://discord.gg/pmZWDGFz';
     const description = document.getElementById('eventDescription').value.trim();
 
-    if (!title || !type || !dateInput || !hostId || !location || !description) {
+    if (!title || !type || (!withoutTime && !dateInput) || !hostId || !location || !description) {
         showToast('Bitte fülle alle Pflichtfelder für das Ereignis aus', 'error');
         return;
     }
@@ -3172,11 +3216,14 @@ function handleEventSave(e) {
         id: eventId || `event-${Date.now()}`,
         title,
         type,
-        date: new Date(dateInput).toISOString(),
+        date: withoutTime
+            ? (events.find(entry => String(entry.id) === String(eventId))?.date || new Date().toISOString())
+            : new Date(dateInput).toISOString(),
         description,
         location,
         hostId,
-        link
+        link,
+        hasTime: !withoutTime
     });
 
     const existingIndex = events.findIndex(entry => String(entry.id) === String(normalizedEvent.id));
@@ -4375,6 +4422,10 @@ document.getElementById('eventForm')?.addEventListener('submit', handleEventSave
 document.addEventListener('change', (e) => {
     if (e.target.matches('#projectPlatform, #editProjectPlatform, .additional-platform-select')) {
         syncPlatformNameField(e.target);
+    }
+
+    if (e.target.matches('#eventNoTime')) {
+        syncEventTimingField();
     }
 
     if (e.target.matches('.member-social-enabled')) {
