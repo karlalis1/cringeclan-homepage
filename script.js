@@ -4270,12 +4270,12 @@ function showImpressum() {
         <h2>Impressum</h2>
         <p>Angaben gemäß § 5 TMG</p>
         <p><strong>Karlali</strong><br>
-        [Adresse]<br>
-        [Kontakt]</p>
+        Amselweg 69<br>
+        Schreibt mir per Sigeon Pex Post Bei anfragen</p>
         <p><strong>Kontakt:</strong><br>
         E-Mail: [E-Mail-Adresse]</p>
         <p><strong>Haftung für Inhalte:</strong><br>
-        Die Inhalte unserer Seiten wurden mit größter Sorgfalt erstellt. Für die Richtigkeit, Vollständigkeit und Aktualität der Inhalte können wir jedoch keine Gewähr übernehmen.</p>
+        Fuck shit Impression.</p>
     `;
     
     document.getElementById('legalModalContent').innerHTML = content;
