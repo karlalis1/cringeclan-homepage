@@ -2484,11 +2484,259 @@ body {
     gap: 1rem;
 }
 
+.auth-modal-content {
+    overflow: hidden;
+    max-width: 540px;
+    min-height: 560px;
+    margin: 4% auto;
+    padding: 0;
+    background:
+        radial-gradient(circle at 50% 18%, rgba(255, 244, 206, 0.2), transparent 22%),
+        linear-gradient(180deg, rgba(16, 14, 18, 0.96), rgba(10, 8, 12, 0.98));
+    border: 1px solid rgba(255, 224, 150, 0.15);
+    box-shadow:
+        0 30px 80px rgba(0, 0, 0, 0.55),
+        0 0 60px rgba(220, 20, 60, 0.16),
+        inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.auth-lamp-scene {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+}
+
+.auth-lamp-chain {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    width: 2px;
+    height: 86px;
+    transform: translateX(-50%);
+    background: linear-gradient(180deg, rgba(255, 233, 170, 0.7), rgba(255, 233, 170, 0.05));
+    box-shadow: 0 0 12px rgba(255, 232, 170, 0.18);
+}
+
+.auth-lamp-fixture {
+    position: absolute;
+    top: 74px;
+    left: 50%;
+    width: 106px;
+    height: 54px;
+    transform: translateX(-50%);
+    border-radius: 0 0 55px 55px;
+    background: linear-gradient(180deg, rgba(78, 60, 42, 0.96), rgba(18, 14, 12, 0.98));
+    border: 1px solid rgba(255, 220, 150, 0.24);
+    box-shadow:
+        0 12px 30px rgba(0, 0, 0, 0.45),
+        inset 0 -8px 18px rgba(0, 0, 0, 0.4),
+        inset 0 2px 10px rgba(255, 237, 190, 0.08);
+}
+
+.auth-lamp-fixture::before {
+    content: '';
+    position: absolute;
+    top: -10px;
+    left: 50%;
+    width: 44px;
+    height: 14px;
+    transform: translateX(-50%);
+    border-radius: 999px;
+    background: linear-gradient(180deg, rgba(112, 83, 57, 0.95), rgba(46, 33, 23, 0.95));
+    border: 1px solid rgba(255, 220, 150, 0.14);
+}
+
+.auth-lamp-core {
+    position: absolute;
+    left: 50%;
+    bottom: 10px;
+    width: 18px;
+    height: 18px;
+    transform: translateX(-50%);
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255, 250, 227, 1) 0%, rgba(255, 223, 127, 0.98) 40%, rgba(255, 193, 89, 0.65) 72%, transparent 100%);
+    box-shadow:
+        0 0 10px rgba(255, 236, 178, 0.95),
+        0 0 26px rgba(255, 220, 120, 0.7),
+        0 0 42px rgba(255, 214, 112, 0.45);
+    animation: authLampPulse 4.8s ease-in-out infinite;
+}
+
+.auth-light-beam {
+    position: absolute;
+    top: 96px;
+    left: 50%;
+    width: 420px;
+    height: 430px;
+    transform: translateX(-50%);
+    clip-path: polygon(48% 0%, 52% 0%, 100% 100%, 0% 100%);
+    background:
+        linear-gradient(180deg, rgba(255, 245, 205, 0.34), rgba(255, 220, 128, 0.15) 42%, rgba(255, 205, 110, 0.06) 76%, transparent 100%);
+    filter: blur(1px);
+    opacity: 0.95;
+    mix-blend-mode: screen;
+    animation: authBeamShift 6s ease-in-out infinite;
+}
+
+.auth-light-glow {
+    position: absolute;
+    left: 50%;
+    bottom: 86px;
+    width: 320px;
+    height: 110px;
+    transform: translateX(-50%);
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255, 223, 138, 0.34) 0%, rgba(255, 214, 116, 0.18) 42%, rgba(255, 209, 112, 0.07) 68%, transparent 100%);
+    filter: blur(10px);
+}
+
+.auth-eye-sigil {
+    position: absolute;
+    left: 50%;
+    top: 204px;
+    width: 112px;
+    height: 112px;
+    transform: translateX(-50%);
+    opacity: 0.22;
+    filter: drop-shadow(0 0 12px rgba(255, 227, 155, 0.18));
+}
+
+.auth-eye-sigil::before,
+.auth-eye-sigil::after,
+.auth-eye-sigil span::before,
+.auth-eye-sigil span::after {
+    content: '';
+    position: absolute;
+}
+
+.auth-eye-sigil::before {
+    inset: 22px 12px;
+    border: 1px solid rgba(255, 232, 182, 0.5);
+    border-radius: 50% / 62%;
+}
+
+.auth-eye-sigil::after {
+    left: 50%;
+    top: 50%;
+    width: 20px;
+    height: 20px;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255, 247, 226, 0.95) 0%, rgba(255, 218, 116, 0.72) 45%, transparent 78%);
+}
+
+.auth-eye-sigil span::before {
+    left: 50%;
+    top: 8px;
+    width: 0;
+    height: 0;
+    transform: translateX(-50%);
+    border-left: 42px solid transparent;
+    border-right: 42px solid transparent;
+    border-bottom: 72px solid rgba(255, 230, 176, 0.15);
+}
+
+.auth-eye-sigil span::after {
+    left: 50%;
+    bottom: 6px;
+    width: 68px;
+    height: 1px;
+    transform: translateX(-50%);
+    background: linear-gradient(90deg, transparent, rgba(255, 231, 179, 0.46), transparent);
+}
+
+.auth-light-focus {
+    position: relative;
+    z-index: 1;
+    width: min(100% - 3rem, 360px);
+    margin: 210px auto 2rem;
+    padding: 1.65rem 1.4rem 1.5rem;
+    border-radius: calc(var(--border-radius-lg) - 4px);
+    background:
+        linear-gradient(180deg, rgba(34, 28, 22, 0.58), rgba(14, 12, 14, 0.88)),
+        rgba(20, 17, 20, 0.84);
+    border: 1px solid rgba(255, 223, 146, 0.14);
+    box-shadow:
+        0 18px 45px rgba(0, 0, 0, 0.36),
+        inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+}
+
+.auth-modal-content .close {
+    z-index: 2;
+}
+
+.auth-modal-content h2 {
+    margin-bottom: 1.25rem;
+    background: linear-gradient(135deg, #fff8df, #f5cc72 55%, #c98034 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-shadow: 0 0 18px rgba(255, 223, 133, 0.16);
+}
+
+.auth-login-copy,
+.auth-login-status {
+    color: rgba(238, 230, 216, 0.78);
+}
+
+.auth-login-status {
+    padding: 0.85rem 1rem;
+    border-radius: var(--border-radius);
+    background: rgba(255, 239, 198, 0.06);
+    border: 1px solid rgba(255, 224, 150, 0.09);
+}
+
+@keyframes authLampPulse {
+    0%, 100% {
+        transform: translateX(-50%) scale(1);
+        opacity: 0.92;
+    }
+    50% {
+        transform: translateX(-50%) scale(1.08);
+        opacity: 1;
+    }
+}
+
+@keyframes authBeamShift {
+    0%, 100% {
+        opacity: 0.88;
+        transform: translateX(-50%) scaleY(1);
+    }
+    50% {
+        opacity: 1;
+        transform: translateX(-50%) scaleY(1.03);
+    }
+}
+
+@media (max-width: 640px) {
+    .auth-modal-content {
+        min-height: 520px;
+        margin: 7% auto;
+    }
+
+    .auth-light-beam {
+        width: 320px;
+        height: 370px;
+    }
+
+    .auth-light-focus {
+        width: min(100% - 2rem, 330px);
+        margin-top: 198px;
+    }
+
+    .auth-eye-sigil {
+        top: 198px;
+        width: 96px;
+        height: 96px;
+    }
+}
+
 .auth-login-copy,
 .auth-login-status {
     margin: 0;
     text-align: center;
-    color: var(--text-secondary);
     line-height: 1.6;
 }
 

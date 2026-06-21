@@ -343,15 +343,28 @@
 
     <!-- Admin Modal -->
     <div class="modal" id="adminModal" role="dialog" aria-modal="true" aria-labelledby="adminModalTitle">
-        <div class="modal-content">
+        <div class="modal-content auth-modal-content">
+            <div class="auth-lamp-scene" aria-hidden="true">
+                <div class="auth-lamp-chain"></div>
+                <div class="auth-lamp-fixture">
+                    <span class="auth-lamp-core"></span>
+                </div>
+                <div class="auth-light-beam"></div>
+                <div class="auth-light-glow"></div>
+                <div class="auth-eye-sigil">
+                    <span></span>
+                </div>
+            </div>
             <span class="close" onclick="closeAdminModal()" aria-label="Schließen">&times;</span>
-            <h2 id="adminModalTitle">Login</h2>
-            <div class="auth-login-shell">
-                <p id="authModalIntro" class="auth-login-copy">Melde dich mit Google an. Admins duerfen alles bearbeiten, Mitglieder nur ihr eigenes Profil.</p>
-                <button type="button" class="btn btn-primary" id="googleLoginButton">
-                    <i class="fab fa-google"></i> Mit Google anmelden
-                </button>
-                <p id="authStatusMessage" class="auth-login-status">Firebase noch nicht verbunden.</p>
+            <div class="auth-light-focus">
+                <h2 id="adminModalTitle">Login</h2>
+                <div class="auth-login-shell">
+                    <p id="authModalIntro" class="auth-login-copy">Melde dich mit Google an. Admins duerfen alles bearbeiten, Mitglieder nur ihr eigenes Profil.</p>
+                    <button type="button" class="btn btn-primary" id="googleLoginButton">
+                        <i class="fab fa-google"></i> Mit Google anmelden
+                    </button>
+                    <p id="authStatusMessage" class="auth-login-status">Firebase noch nicht verbunden.</p>
+                </div>
             </div>
         </div>
     </div>
