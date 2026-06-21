@@ -105,7 +105,7 @@
         </div>
     </header>
 
-    <nav class="tab-navigation" aria-label="Bereiche">
+    <nav class="tab-navigation" id="clanTabNavigation" aria-label="Bereiche">
         <button class="tab-btn active" data-tab="startseite">Startseite</button>
         <button class="tab-btn" data-tab="projekte">Projekte</button>
         <button class="tab-btn" data-tab="ereignisse">Ereignisse</button>
@@ -249,20 +249,20 @@
             <div class="container">
                 <div class="contact-shell">
                     <div class="contact-section">
-                        <h2>Kontaktiere uns</h2>
-                        <p>Du willst mit dem Clan schreiben oder einem Projekt beitreten? Discord ist der schnellste Weg.</p>
+                        <h2 id="contactSectionTitle">Kontaktiere uns</h2>
+                        <p id="contactSectionIntro">Du willst mit dem Clan schreiben oder einem Projekt beitreten? Discord ist der schnellste Weg.</p>
                         <div class="contact-methods">
                             <div class="contact-card">
                                 <span class="contact-icon">💬</span>
-                                <h3>Discord</h3>
-                                <p>Tritt unserem Discord bei und schreib direkt mit uns.</p>
-                                <a href="https://discord.gg/pmZWDGFz" target="_blank" rel="noreferrer" class="contact-btn">Discord beitreten</a>
+                                <h3 id="contactDiscordTitle">Discord</h3>
+                                <p id="contactDiscordText">Tritt unserem Discord bei und schreib direkt mit uns.</p>
+                                <a href="https://discord.gg/pmZWDGFz" target="_blank" rel="noreferrer" class="contact-btn" id="contactDiscordButton">Discord beitreten</a>
                             </div>
                             <div class="contact-card">
                                 <span class="contact-icon">🎮</span>
-                                <h3>Minecraft</h3>
-                                <p>Server und Events laufen über den Clan und Discord.</p>
-                                <span class="contact-detail">Server-IP: coming soon</span>
+                                <h3 id="contactMinecraftTitle">Minecraft</h3>
+                                <p id="contactMinecraftText">Server und Events laufen über den Clan und Discord.</p>
+                                <span class="contact-detail" id="contactMinecraftDetail">Server-IP: coming soon</span>
                             </div>
                         </div>
                     </div>
@@ -305,7 +305,7 @@
                 </div>
                 <div class="footer-section">
                     <h4>Bereiche</h4>
-                    <ul>
+                    <ul id="footerTabLinks">
                         <li><a href="#" data-tab-target="startseite">Startseite</a></li>
                         <li><a href="#" data-tab-target="projekte">Projekte</a></li>
                         <li><a href="#" data-tab-target="ereignisse">Ereignisse</a></li>
@@ -452,6 +452,9 @@
                             <div class="form-group">
                                 <label for="projectImage">Bild URL</label>
                                 <input type="url" id="projectImage">
+                                <button type="button" class="btn btn-secondary btn-image-upload hidden" data-upload-target="projectImage" data-upload-folder="projects">
+                                    <i class="fas fa-upload"></i> Bild hochladen
+                                </button>
                             </div>
                         </div>
                         <div class="form-group">
@@ -690,6 +693,52 @@
                                 <option value="high-contrast">High Contrast</option>
                             </select>
                         </div>
+                        <div class="form-group" data-admin-only="true">
+                            <label>Reiter-Reihenfolge</label>
+                            <div id="tabOrderEditor" class="tab-order-editor"></div>
+                            <small class="admin-field-hint">Admins koennen hier die Reihenfolge der sichtbaren Seiten-Reiter aendern. `Intern` bleibt weiterhin nur fuer eingeloggte Clan-Mitglieder sichtbar.</small>
+                        </div>
+                        <div class="admin-section-divider"></div>
+                        <div class="form-group">
+                            <label for="contactAdminTitle">Kontakt-Titel</label>
+                            <input type="text" id="contactAdminTitle">
+                        </div>
+                        <div class="form-group">
+                            <label for="contactAdminIntro">Kontakt-Einleitung</label>
+                            <textarea id="contactAdminIntro" rows="2"></textarea>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="contactDiscordAdminTitle">Discord-Titel</label>
+                                <input type="text" id="contactDiscordAdminTitle">
+                            </div>
+                            <div class="form-group">
+                                <label for="contactMinecraftAdminTitle">Minecraft-Titel</label>
+                                <input type="text" id="contactMinecraftAdminTitle">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="contactDiscordAdminText">Discord-Text</label>
+                            <textarea id="contactDiscordAdminText" rows="2"></textarea>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="contactDiscordAdminUrl">Discord-Link</label>
+                                <input type="url" id="contactDiscordAdminUrl" placeholder="https://...">
+                            </div>
+                            <div class="form-group">
+                                <label for="contactDiscordAdminButton">Discord-Button Text</label>
+                                <input type="text" id="contactDiscordAdminButton">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="contactMinecraftAdminText">Minecraft-Text</label>
+                            <textarea id="contactMinecraftAdminText" rows="2"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="contactMinecraftAdminDetail">Minecraft-Detail</label>
+                            <input type="text" id="contactMinecraftAdminDetail" placeholder="z.B. Server-IP oder Hinweis">
+                        </div>
                         <button type="submit" class="btn btn-primary">
                             <i class="fas fa-save"></i> Einstellungen speichern
                         </button>
@@ -847,6 +896,9 @@
                             <div class="form-group">
                                 <label for="memberImage">Profilbild URL</label>
                                 <input type="url" id="memberImage" placeholder="https://...">
+                                <button type="button" class="btn btn-secondary btn-image-upload hidden" data-upload-target="memberImage" data-upload-folder="members">
+                                    <i class="fas fa-upload"></i> Bild hochladen
+                                </button>
                                 <small id="memberImageHint" class="admin-field-hint">Direkte Bild-URL oder GitHub-`blob`/`tree`-Link einfuegen.</small>
                                 <div id="memberImagePreview" class="member-image-preview"></div>
                             </div>
@@ -899,6 +951,9 @@
                             <div class="form-group">
                                 <label for="socialDefinitionIcon">Icon Klasse oder Bild-URL *</label>
                                 <input type="text" id="socialDefinitionIcon" placeholder="z.B. fab fa-discord oder https://..." required>
+                                <button type="button" class="btn btn-secondary btn-image-upload hidden" data-upload-target="socialDefinitionIcon" data-upload-folder="socials">
+                                    <i class="fas fa-upload"></i> Bild hochladen
+                                </button>
                             </div>
                         </div>
                         <div class="social-definition-preview-panel">
@@ -1000,6 +1055,9 @@
                     <div class="form-group">
                         <label for="editProjectImage">Bild URL</label>
                         <input type="url" id="editProjectImage">
+                        <button type="button" class="btn btn-secondary btn-image-upload hidden" data-upload-target="editProjectImage" data-upload-folder="projects">
+                            <i class="fas fa-upload"></i> Bild hochladen
+                        </button>
                     </div>
                 </div>
                 <div class="form-group">
@@ -1141,12 +1199,14 @@
 
     <!-- Tooltip Container -->
     <div id="tooltip" class="tooltip"></div>
+    <input type="file" id="imageUploadInput" accept="image/*" hidden>
 
     <script src="i18n.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
     <script src="script.js"></script>
     <script>
         // Service Worker Registration

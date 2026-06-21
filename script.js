@@ -15,6 +15,16 @@ let settings = {
     siteTitle: 'CRINGECLAN',
     siteDescription: 'CRINGECLAN - Projekte, Mitglieder und Community an einem Ort.',
     memberAreaText: 'Hier koennen interne Infos, Hinweise oder kleine Clan-Updates stehen.',
+    clanTabOrder: ['startseite', 'projekte', 'ereignisse', 'intern', 'kontakt', 'mitglieder'],
+    contactTitle: 'Kontaktiere uns',
+    contactIntro: 'Du willst mit dem Clan schreiben oder einem Projekt beitreten? Discord ist der schnellste Weg.',
+    contactDiscordTitle: 'Discord',
+    contactDiscordText: 'Tritt unserem Discord bei und schreib direkt mit uns.',
+    contactDiscordUrl: 'https://discord.gg/pmZWDGFz',
+    contactDiscordButtonText: 'Discord beitreten',
+    contactMinecraftTitle: 'Minecraft',
+    contactMinecraftText: 'Server und Events laufen über den Clan und Discord.',
+    contactMinecraftDetail: 'Server-IP: coming soon',
     defaultTheme: 'dark',
     sessionTimeout: 30,
     enableAuditLog: true,
@@ -43,7 +53,9 @@ let sessionTimeout = null;
 let firebaseApp = null;
 let firebaseAuth = null;
 let firebaseDb = null;
+let firebaseStorage = null;
 let firestorePermissionWarned = false;
+let pendingImageUploadTarget = null;
 let authState = {
     user: null,
     role: 'guest',
@@ -72,6 +84,14 @@ const MEMBER_TAB_PERMISSION_OPTIONS = [
     { id: 'socials', label: 'Socials' },
     { id: 'internal', label: 'Intern' },
     { id: 'activity', label: 'Aktivität' }
+];
+const CLAN_TAB_OPTIONS = [
+    { id: 'startseite', label: 'Startseite' },
+    { id: 'projekte', label: 'Projekte' },
+    { id: 'ereignisse', label: 'Ereignisse' },
+    { id: 'intern', label: 'Intern', requiresClanAuth: true },
+    { id: 'kontakt', label: 'Kontakt' },
+    { id: 'mitglieder', label: 'Mitglieder' }
 ];
 
 // Project Type Configuration
@@ -376,6 +396,122 @@ function requireAdminAccess() {
     return false;
 }
 
+function canUploadImages() {
+    return authState.role === 'admin' || authState.role === 'member';
+}
+
+function updateImageUploadAvailability() {
+    const canUseUpload = canUploadImages() && Boolean(firebaseStorage) && location.protocol !== 'file:';
+
+    document.querySelectorAll('.btn-image-upload').forEach(button => {
+        button.classList.toggle('hidden', !canUseUpload);
+        button.disabled = !canUseUpload;
+    });
+}
+
+function sanitizeStorageFileName(fileName = 'upload') {
+    return fileName
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-zA-Z0-9._-]/g, '-')
+        .replace(/-+/g, '-')
+        .slice(0, 80) || 'upload';
+}
+
+async function uploadImageToStorage(file, folder = 'uploads') {
+    if (!firebaseStorage) {
+        throw new Error('Firebase Storage ist noch nicht bereit');
+    }
+
+    if (!canUploadImages() || !authState.user) {
+        throw new Error('Nur eingeloggte Mitglieder und Admins duerfen Bilder hochladen');
+    }
+
+    if (!file || !file.type.startsWith('image/')) {
+        throw new Error('Bitte waehle eine Bilddatei aus');
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+        throw new Error('Das Bild ist zu gross. Maximal 10 MB sind erlaubt');
+    }
+
+    const fileName = `${Date.now()}-${sanitizeStorageFileName(file.name)}`;
+    const userFolder = authState.memberId || authState.user.uid || authState.role;
+    const storageRef = firebaseStorage.ref(`${folder}/${userFolder}/${fileName}`);
+    const snapshot = await storageRef.put(file, { contentType: file.type });
+    return snapshot.ref.getDownloadURL();
+}
+
+function applyUploadedImageUrl(targetId, imageUrl) {
+    const targetInput = document.getElementById(targetId);
+    if (!targetInput) {
+        return;
+    }
+
+    targetInput.value = imageUrl;
+    targetInput.dispatchEvent(new Event('input', { bubbles: true }));
+    targetInput.dispatchEvent(new Event('change', { bubbles: true }));
+}
+
+function openImageUploadPicker(button) {
+    if (!canUploadImages()) {
+        showToast('Nur eingeloggte Mitglieder und Admins duerfen Bilder hochladen', 'error');
+        return;
+    }
+
+    if (!firebaseStorage) {
+        showToast('Firebase Storage ist noch nicht verfuegbar', 'warning');
+        return;
+    }
+
+    const fileInput = document.getElementById('imageUploadInput');
+    if (!fileInput) {
+        return;
+    }
+
+    pendingImageUploadTarget = {
+        targetId: button.dataset.uploadTarget,
+        folder: button.dataset.uploadFolder || 'uploads',
+        triggerButton: button
+    };
+
+    fileInput.value = '';
+    fileInput.click();
+}
+
+async function handleImageUploadSelection(event) {
+    const file = event.target.files?.[0];
+    if (!file || !pendingImageUploadTarget) {
+        return;
+    }
+
+    const { targetId, folder, triggerButton } = pendingImageUploadTarget;
+    const originalLabel = triggerButton?.innerHTML;
+
+    try {
+        if (triggerButton) {
+            triggerButton.disabled = true;
+            triggerButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Upload läuft';
+        }
+
+        const imageUrl = await uploadImageToStorage(file, folder);
+        applyUploadedImageUrl(targetId, imageUrl);
+        showToast('Bild erfolgreich hochgeladen', 'success');
+    } catch (error) {
+        console.error('Image upload error:', error);
+        showToast(error?.message || 'Bild-Upload fehlgeschlagen', 'error');
+    } finally {
+        if (triggerButton) {
+            triggerButton.disabled = false;
+            triggerButton.innerHTML = originalLabel;
+        }
+
+        event.target.value = '';
+        pendingImageUploadTarget = null;
+        updateImageUploadAvailability();
+    }
+}
+
 function updateAuthInterface() {
     const adminButtonText = document.querySelector('.admin-btn .btn-text');
     const authStatus = document.getElementById('authStatusMessage');
@@ -418,6 +554,8 @@ function updateAuthInterface() {
     if (loginButton) {
         loginButton.disabled = location.protocol === 'file:' || !isFirebaseConfigured();
     }
+
+    updateImageUploadAvailability();
 }
 
 function renderInternalContent() {
@@ -995,6 +1133,41 @@ function applySettingsDefaults() {
     if (typeof settings.memberAreaText !== 'string') {
         settings.memberAreaText = 'Hier koennen interne Infos, Hinweise oder kleine Clan-Updates stehen.';
     }
+
+    if (!settings.contactTitle) settings.contactTitle = 'Kontaktiere uns';
+    if (!settings.contactIntro) settings.contactIntro = 'Du willst mit dem Clan schreiben oder einem Projekt beitreten? Discord ist der schnellste Weg.';
+    if (!settings.contactDiscordTitle) settings.contactDiscordTitle = 'Discord';
+    if (!settings.contactDiscordText) settings.contactDiscordText = 'Tritt unserem Discord bei und schreib direkt mit uns.';
+    if (!settings.contactDiscordUrl) settings.contactDiscordUrl = 'https://discord.gg/pmZWDGFz';
+    if (!settings.contactDiscordButtonText) settings.contactDiscordButtonText = 'Discord beitreten';
+    if (!settings.contactMinecraftTitle) settings.contactMinecraftTitle = 'Minecraft';
+    if (!settings.contactMinecraftText) settings.contactMinecraftText = 'Server und Events laufen über den Clan und Discord.';
+    if (!settings.contactMinecraftDetail) settings.contactMinecraftDetail = 'Server-IP: coming soon';
+}
+
+function renderContactContent() {
+    const mappings = [
+        ['contactSectionTitle', settings.contactTitle],
+        ['contactSectionIntro', settings.contactIntro],
+        ['contactDiscordTitle', settings.contactDiscordTitle],
+        ['contactDiscordText', settings.contactDiscordText],
+        ['contactMinecraftTitle', settings.contactMinecraftTitle],
+        ['contactMinecraftText', settings.contactMinecraftText],
+        ['contactMinecraftDetail', settings.contactMinecraftDetail]
+    ];
+
+    mappings.forEach(([id, value]) => {
+        const element = document.getElementById(id);
+        if (element) {
+            element.textContent = value || '';
+        }
+    });
+
+    const discordButton = document.getElementById('contactDiscordButton');
+    if (discordButton) {
+        discordButton.textContent = settings.contactDiscordButtonText || 'Discord beitreten';
+        discordButton.href = settings.contactDiscordUrl || 'https://discord.gg/pmZWDGFz';
+    }
 }
 
 function persistLocalData() {
@@ -1193,6 +1366,7 @@ function refreshAppUI() {
     renderMembersOverview();
     renderEventsOverview();
     renderInternalContent();
+    renderContactContent();
     updateStatsDisplay();
     loadAdminProjects();
     loadAdminEvents();
@@ -2004,6 +2178,7 @@ function initFirebaseAuth() {
 
     firebaseAuth = firebase.auth();
     firebaseDb = firebase.firestore();
+    firebaseStorage = firebase.storage();
 
     firebaseAuth.onAuthStateChanged(async user => {
         applyAuthState(user);
@@ -2818,6 +2993,15 @@ function loadSettings() {
     document.getElementById('siteTitle').value = settings.siteTitle;
     document.getElementById('siteDescription').value = settings.siteDescription || '';
     document.getElementById('memberAreaEditor').value = settings.memberAreaText || '';
+    document.getElementById('contactAdminTitle').value = settings.contactTitle || '';
+    document.getElementById('contactAdminIntro').value = settings.contactIntro || '';
+    document.getElementById('contactDiscordAdminTitle').value = settings.contactDiscordTitle || '';
+    document.getElementById('contactDiscordAdminText').value = settings.contactDiscordText || '';
+    document.getElementById('contactDiscordAdminUrl').value = settings.contactDiscordUrl || '';
+    document.getElementById('contactDiscordAdminButton').value = settings.contactDiscordButtonText || '';
+    document.getElementById('contactMinecraftAdminTitle').value = settings.contactMinecraftTitle || '';
+    document.getElementById('contactMinecraftAdminText').value = settings.contactMinecraftText || '';
+    document.getElementById('contactMinecraftAdminDetail').value = settings.contactMinecraftDetail || '';
     document.getElementById('defaultTheme').value = settings.defaultTheme || 'dark';
     document.getElementById('sessionTimeout').value = settings.sessionTimeout || 30;
     document.getElementById('enableAuditLog').checked = settings.enableAuditLog;
@@ -3270,6 +3454,15 @@ function handleSettingsUpdate(e) {
     
     const siteTitle = document.getElementById('siteTitle').value.trim();
     const siteDescription = document.getElementById('siteDescription').value.trim();
+    const contactTitle = document.getElementById('contactAdminTitle').value.trim();
+    const contactIntro = document.getElementById('contactAdminIntro').value.trim();
+    const contactDiscordTitle = document.getElementById('contactDiscordAdminTitle').value.trim();
+    const contactDiscordText = document.getElementById('contactDiscordAdminText').value.trim();
+    const contactDiscordUrl = document.getElementById('contactDiscordAdminUrl').value.trim();
+    const contactDiscordButtonText = document.getElementById('contactDiscordAdminButton').value.trim();
+    const contactMinecraftTitle = document.getElementById('contactMinecraftAdminTitle').value.trim();
+    const contactMinecraftText = document.getElementById('contactMinecraftAdminText').value.trim();
+    const contactMinecraftDetail = document.getElementById('contactMinecraftAdminDetail').value.trim();
     const defaultTheme = document.getElementById('defaultTheme').value;
     const sessionTimeout = parseInt(document.getElementById('sessionTimeout').value) || 30;
     const enableAuditLog = document.getElementById('enableAuditLog').checked;
@@ -3283,11 +3476,22 @@ function handleSettingsUpdate(e) {
     if (siteDescription) {
         settings.siteDescription = siteDescription;
     }
+
+    settings.contactTitle = contactTitle || 'Kontaktiere uns';
+    settings.contactIntro = contactIntro || 'Du willst mit dem Clan schreiben oder einem Projekt beitreten? Discord ist der schnellste Weg.';
+    settings.contactDiscordTitle = contactDiscordTitle || 'Discord';
+    settings.contactDiscordText = contactDiscordText || 'Tritt unserem Discord bei und schreib direkt mit uns.';
+    settings.contactDiscordUrl = validateUrl(contactDiscordUrl) ? contactDiscordUrl : 'https://discord.gg/pmZWDGFz';
+    settings.contactDiscordButtonText = contactDiscordButtonText || 'Discord beitreten';
+    settings.contactMinecraftTitle = contactMinecraftTitle || 'Minecraft';
+    settings.contactMinecraftText = contactMinecraftText || 'Server und Events laufen über den Clan und Discord.';
+    settings.contactMinecraftDetail = contactMinecraftDetail || 'Server-IP: coming soon';
     
     settings.defaultTheme = defaultTheme;
     settings.sessionTimeout = sessionTimeout;
     settings.enableAuditLog = enableAuditLog;
     
+    renderContactContent();
     saveData();
     showToast('Einstellungen gespeichert!', 'success');
     logActivity('settings_change', 'Updated settings');
@@ -4424,6 +4628,10 @@ document.addEventListener('change', (e) => {
         syncPlatformNameField(e.target);
     }
 
+    if (e.target.matches('#imageUploadInput')) {
+        handleImageUploadSelection(e);
+    }
+
     if (e.target.matches('#eventNoTime')) {
         syncEventTimingField();
     }
@@ -4455,6 +4663,13 @@ document.addEventListener('input', (e) => {
 
     if (e.target.matches('.member-social-url')) {
         updateMemberSocialAssignmentPreview(e.target.dataset.socialId);
+    }
+});
+
+document.addEventListener('click', (e) => {
+    const uploadButton = e.target.closest('.btn-image-upload');
+    if (uploadButton) {
+        openImageUploadPicker(uploadButton);
     }
 });
 

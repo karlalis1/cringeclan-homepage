@@ -1,4 +1,4 @@
-﻿/* ========================================
+/* ========================================
    GLOBAL STYLES & THEME VARIABLES
    ======================================== */
 
@@ -2246,6 +2246,11 @@ body {
     color: var(--text-secondary);
     font-size: 0.85rem;
     line-height: 1.5;
+}
+
+.btn-image-upload {
+    align-self: flex-start;
+    margin-top: 0.2rem;
 }
 
 .admin-inline-checkbox {
