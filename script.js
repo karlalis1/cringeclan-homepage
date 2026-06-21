@@ -25,6 +25,7 @@ let settings = {
     contactMinecraftTitle: 'Minecraft',
     contactMinecraftText: 'Server und Events laufen über den Clan und Discord.',
     contactMinecraftDetail: 'Server-IP: coming soon',
+    contactWebhook: '',
     defaultTheme: 'dark',
     sessionTimeout: 30,
     enableAuditLog: true,
@@ -1274,7 +1275,7 @@ function getServerTimestamp() {
         : new Date().toISOString();
 }
 
-async function syncAllSiteDataToFirestore() {
+async function syncSiteContentToFirestore() {
     if (!firebaseDb || !canSyncSharedContent()) {
         return;
     }
@@ -1293,6 +1294,12 @@ async function syncAllSiteDataToFirestore() {
     };
 
     await firebaseDb.collection(FIRESTORE_CONTENT_COLLECTION).doc(FIRESTORE_CONTENT_DOC).set(contentPayload, { merge: true });
+}
+
+async function syncAllMembersToFirestore() {
+    if (!firebaseDb || authState.role !== 'admin') {
+        return;
+    }
 
     const membersCollection = firebaseDb.collection(FIRESTORE_MEMBERS_COLLECTION);
     const existingMembersSnapshot = await membersCollection.get();
@@ -1315,6 +1322,11 @@ async function syncAllSiteDataToFirestore() {
     await batch.commit();
 }
 
+async function syncAllSiteDataToFirestore() {
+    await syncSiteContentToFirestore();
+    await syncAllMembersToFirestore();
+}
+
 async function syncCurrentMemberToFirestore() {
     if (!firebaseDb || authState.role !== 'member' || !authState.memberId) {
         return;
@@ -1333,30 +1345,37 @@ async function syncCurrentMemberToFirestore() {
 
 async function saveDataToFirestore() {
     if (!firebaseDb || authState.role === 'guest') {
-        return;
+        return { success: true, skipped: true };
     }
 
     try {
-        if (canSyncSharedContent()) {
+        if (authState.role === 'admin') {
             await syncAllSiteDataToFirestore();
         } else if (authState.role === 'member') {
+            if (getMemberTabPermissions().length > 0) {
+                await syncSiteContentToFirestore();
+            }
+
             await syncCurrentMemberToFirestore();
         }
+
+        return { success: true };
     } catch (error) {
         const code = error?.code || 'unknown';
         console.error('Error saving Firestore data:', { code, error, authState });
 
         if (code === 'permission-denied') {
             showToast('Firestore verweigert Zugriff (permission-denied) – Rules pruefen', 'error');
-            return;
+            return { success: false, code };
         }
 
         if (code === 'unauthenticated') {
             showToast('Nicht eingeloggt (unauthenticated) – bitte neu anmelden', 'error');
-            return;
+            return { success: false, code };
         }
 
         showToast(`Firestore-Speicherung fehlgeschlagen (${code})`, 'error');
+        return { success: false, code };
     }
 }
 
@@ -1465,13 +1484,14 @@ async function loadData() {
     loadDiscordUpdates();
 }
 
-function saveData() {
+async function saveData() {
     try {
         persistLocalData();
-        void saveDataToFirestore();
+        return await saveDataToFirestore();
     } catch (error) {
         console.error('Error saving data:', error);
         showToast('Fehler beim Speichern der Daten', 'error');
+        return { success: false, code: 'local-save-error' };
     }
 }
 
@@ -2709,7 +2729,7 @@ function editMember(memberId) {
     updateAllMemberSocialAssignmentPreviews();
 }
 
-function handleMemberSave(e) {
+async function handleMemberSave(e) {
     e.preventDefault();
 
     const requestedMemberId = document.getElementById('memberId').value.trim();
@@ -2784,7 +2804,7 @@ function handleMemberSave(e) {
         clanMembers.push(normalizedMember);
     }
 
-    saveData();
+    const saveResult = await saveData();
     populateMemberSelects();
     loadAdminMembers();
     renderMembersOverview();
@@ -2793,6 +2813,13 @@ function handleMemberSave(e) {
     if (authState.role === 'member' && authState.memberId) {
         editMember(authState.memberId);
     }
+    if (saveResult?.success === false) {
+        showToast(authState.role === 'member'
+            ? 'Profil lokal gespeichert, aber Firestore konnte nicht aktualisiert werden'
+            : 'Mitglied lokal gespeichert, aber Firestore konnte nicht aktualisiert werden', 'warning');
+        return;
+    }
+
     showToast(authState.role === 'member' ? 'Profil gespeichert' : 'Mitglied gespeichert', 'success');
 }
 
@@ -3009,6 +3036,7 @@ function loadSettings() {
     document.getElementById('backupInterval').value = settings.backupInterval || 24;
     document.getElementById('backupRetention').value = settings.backupRetention || 30;
     document.getElementById('discordWebhook').value = settings.discordWebhook || '';
+    document.getElementById('contactWebhook').value = settings.contactWebhook || '';
     document.getElementById('discordNotifyNewProject').checked = settings.discordNotifyNewProject;
     document.getElementById('discordNotifyUpdate').checked = settings.discordNotifyUpdate;
     document.getElementById('githubToken').value = settings.githubToken || '';
@@ -3558,6 +3586,7 @@ function handleAPIIntegration(e) {
     }
     
     settings.discordWebhook = document.getElementById('discordWebhook').value.trim();
+    settings.contactWebhook = document.getElementById('contactWebhook').value.trim();
     settings.discordNotifyNewProject = document.getElementById('discordNotifyNewProject').checked;
     settings.discordNotifyUpdate = document.getElementById('discordNotifyUpdate').checked;
     settings.discordChannelId = document.getElementById('discordChannelId').value.trim();
@@ -3698,6 +3727,49 @@ async function sendDiscordNotification(logEntry) {
         });
     } catch (error) {
         console.error('Discord webhook error:', error);
+    }
+}
+
+async function sendContactWebhookMessage({ name, email, message }) {
+    if (!settings.contactWebhook) {
+        throw new Error('Kein Kontakt-Webhook hinterlegt');
+    }
+
+    const embed = {
+        title: 'Neue Kontaktanfrage',
+        color: 0xdc143c,
+        timestamp: new Date().toISOString(),
+        fields: [
+            {
+                name: 'Name',
+                value: name || '-',
+                inline: true
+            },
+            {
+                name: 'E-Mail',
+                value: email || '-',
+                inline: true
+            },
+            {
+                name: 'Nachricht',
+                value: message || '-'
+            }
+        ]
+    };
+
+    const response = await fetch(settings.contactWebhook, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            username: 'Cringeclan Kontakt',
+            embeds: [embed]
+        })
+    });
+
+    if (!response.ok) {
+        throw new Error(`Webhook antwortet mit ${response.status}`);
     }
 }
 
@@ -4252,13 +4324,37 @@ function handleContactForm(e) {
         showToast('Bitte geben Sie eine gültige E-Mail-Adresse ein', 'error');
         return;
     }
-    
-    console.log('Contact form submitted:', { name, email, message });
-    
-    showToast('Vielen Dank für deine Nachricht! Ich werde mich schnellstmöglich bei dir melden.', 'success');
-    e.target.reset();
-    
-    logActivity('contact_form', `Contact form submitted by ${name}`);
+
+    if (!settings.contactWebhook) {
+        showToast('Kontakt ist noch nicht fertig eingerichtet. Hinterlege zuerst einen Kontakt-Webhook im Adminbereich.', 'warning');
+        return;
+    }
+
+    const submitButton = e.target.querySelector('button[type="submit"]');
+    const originalLabel = submitButton?.innerHTML;
+
+    Promise.resolve()
+        .then(async () => {
+            if (submitButton) {
+                submitButton.disabled = true;
+                submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Wird gesendet';
+            }
+
+            await sendContactWebhookMessage({ name, email, message });
+            showToast('Nachricht erfolgreich an den Cringeclan gesendet!', 'success');
+            e.target.reset();
+            logActivity('contact_form', `Contact form submitted by ${name}`);
+        })
+        .catch(error => {
+            console.error('Contact webhook error:', error);
+            showToast('Nachricht konnte nicht gesendet werden', 'error');
+        })
+        .finally(() => {
+            if (submitButton) {
+                submitButton.disabled = false;
+                submitButton.innerHTML = originalLabel;
+            }
+        });
 }
 
 // ========================================
@@ -4270,12 +4366,12 @@ function showImpressum() {
         <h2>Impressum</h2>
         <p>Angaben gemäß § 5 TMG</p>
         <p><strong>Karlali</strong><br>
-        Amselweg 69<br>
-        Schreibt mir per Sigeon Pex Post Bei anfragen</p>
+        [Adresse]<br>
+        [Kontakt]</p>
         <p><strong>Kontakt:</strong><br>
         E-Mail: [E-Mail-Adresse]</p>
         <p><strong>Haftung für Inhalte:</strong><br>
-        Fuck shit Impression.</p>
+        Die Inhalte unserer Seiten wurden mit größter Sorgfalt erstellt. Für die Richtigkeit, Vollständigkeit und Aktualität der Inhalte können wir jedoch keine Gewähr übernehmen.</p>
     `;
     
     document.getElementById('legalModalContent').innerHTML = content;
