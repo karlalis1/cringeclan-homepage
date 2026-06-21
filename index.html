@@ -344,19 +344,18 @@
     <!-- Admin Modal -->
     <div class="modal" id="adminModal" role="dialog" aria-modal="true" aria-labelledby="adminModalTitle">
         <div class="modal-content auth-modal-content">
-            <div class="auth-lamp-scene" aria-hidden="true">
-                <div class="auth-lamp-chain"></div>
-                <div class="auth-lamp-fixture">
-                    <span class="auth-lamp-core"></span>
-                </div>
-                <div class="auth-light-beam"></div>
-                <div class="auth-light-glow"></div>
-                <div class="auth-eye-sigil">
-                    <span></span>
-                </div>
-            </div>
             <span class="close" onclick="closeAdminModal()" aria-label="Schließen">&times;</span>
-            <div class="auth-light-focus">
+            <div class="auth-switch-panel">
+                <span class="auth-switch-caption">Lichtschalter</span>
+                <button type="button" class="auth-light-switch" id="authLightSwitch" aria-pressed="false">
+                    <span class="auth-light-switch-track">
+                        <span class="auth-light-switch-knob"></span>
+                    </span>
+                    <span class="auth-light-switch-text" id="authLightSwitchLabel">Licht einschalten</span>
+                </button>
+                <p class="auth-switch-hint">Schalter umlegen, dann erscheint das Login im Licht.</p>
+            </div>
+            <div class="auth-light-focus" id="authLightFocus">
                 <h2 id="adminModalTitle">Login</h2>
                 <div class="auth-login-shell">
                     <p id="authModalIntro" class="auth-login-copy">Melde dich mit Google an. Admins duerfen alles bearbeiten, Mitglieder nur ihr eigenes Profil.</p>

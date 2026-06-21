@@ -2172,11 +2172,33 @@ function openAdminModal() {
     }
 
     document.getElementById('adminModal').style.display = 'block';
+    setAuthLightState(false);
     updateAuthInterface();
 }
 
 function closeAdminModal() {
     document.getElementById('adminModal').style.display = 'none';
+    setAuthLightState(false);
+}
+
+function setAuthLightState(isEnabled) {
+    const modalContent = document.querySelector('#adminModal .auth-modal-content');
+    const switchButton = document.getElementById('authLightSwitch');
+    const switchLabel = document.getElementById('authLightSwitchLabel');
+    const loginButton = document.getElementById('googleLoginButton');
+
+    if (!modalContent || !switchButton || !switchLabel) {
+        return;
+    }
+
+    const enabled = Boolean(isEnabled);
+    modalContent.classList.toggle('is-lit', enabled);
+    switchButton.setAttribute('aria-pressed', String(enabled));
+    switchLabel.textContent = enabled ? 'Licht ist an' : 'Licht einschalten';
+
+    if (enabled) {
+        window.setTimeout(() => loginButton?.focus(), 220);
+    }
 }
 
 function initFirebaseAuth() {
@@ -4705,6 +4727,10 @@ document.querySelector('.footer')?.addEventListener('click', handleClanTabClick)
 // Admin login
 document.getElementById('googleLoginButton')?.addEventListener('click', signInWithGoogle);
 document.getElementById('authSignOutButton')?.addEventListener('click', signOutGoogle);
+document.getElementById('authLightSwitch')?.addEventListener('click', () => {
+    const isCurrentlyEnabled = document.querySelector('#adminModal .auth-modal-content')?.classList.contains('is-lit');
+    setAuthLightState(!isCurrentlyEnabled);
+});
 
 // Admin forms
 document.getElementById('addProjectForm').addEventListener('submit', handleAddProject);
