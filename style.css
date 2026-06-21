@@ -2485,11 +2485,15 @@ body {
 }
 
 .auth-modal-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
     overflow: hidden;
     max-width: 560px;
     min-height: 460px;
     margin: 5% auto;
-    padding: 1.5rem;
+    padding: 4.25rem 1.5rem 1.5rem;
     background:
         radial-gradient(circle at 50% 18%, rgba(255, 244, 206, 0.08), transparent 24%),
         linear-gradient(180deg, rgba(16, 14, 18, 0.98), rgba(10, 8, 12, 0.99));
@@ -2537,12 +2541,9 @@ body {
 }
 
 .auth-switch-panel {
-    position: absolute;
+    position: relative;
     z-index: 1;
-    top: 3.6rem;
-    left: 50%;
-    width: min(100% - 3rem, 330px);
-    transform: translateX(-50%);
+    width: min(100%, 330px);
     display: grid;
     justify-items: center;
     gap: 1rem;
@@ -2633,8 +2634,8 @@ body {
 .auth-light-focus {
     position: relative;
     z-index: 1;
-    width: min(100% - 3rem, 370px);
-    margin: 11.5rem auto 1rem;
+    width: min(100%, 370px);
+    margin: 0 auto;
     padding: 1.65rem 1.4rem 1.5rem;
     border-radius: calc(var(--border-radius-lg) - 4px);
     background:
@@ -2718,16 +2719,15 @@ body {
     .auth-modal-content {
         min-height: 440px;
         margin: 7% auto;
+        padding: 4rem 1rem 1rem;
     }
 
     .auth-switch-panel {
-        top: 3.2rem;
-        width: min(100% - 2rem, 310px);
+        width: min(100%, 310px);
     }
 
     .auth-light-focus {
-        width: min(100% - 2rem, 330px);
-        margin-top: 11rem;
+        width: min(100%, 330px);
     }
 
     .auth-light-focus::before {
