@@ -812,6 +812,16 @@
                             </div>
                             <small class="admin-field-hint">Hier kannst du rohe Export-Dateinamen einfügen. Die Importhilfe erkennt automatisch `Kategorie`, `Label` und die HTML-Datei.</small>
                         </div>
+                        <div class="form-group">
+                            <label for="discordArchiveFolderInput">Ganzen Discord-Archiv-Ordner importieren</label>
+                            <input type="file" id="discordArchiveFolderInput" webkitdirectory directory multiple>
+                            <div class="bulk-actions discord-archive-actions">
+                                <button type="button" class="btn btn-secondary" id="importDiscordArchiveFolderButton">
+                                    <i class="fas fa-folder-open"></i> Ordner importieren
+                                </button>
+                            </div>
+                            <small class="admin-field-hint">Wähle deinen kompletten Discord-Export-Ordner aus. Die Seite übernimmt automatisch alle `.html`-Chatdateien und ignoriert `assets` und andere Dateien.</small>
+                        </div>
                         <button type="submit" class="btn btn-primary">
                             <i class="fas fa-save"></i> Einstellungen speichern
                         </button>

@@ -669,6 +669,26 @@ function addDiscordArchiveChannelRow(channel = {}) {
     container.appendChild(row);
 }
 
+function appendDiscordArchiveChannelRows(channels = []) {
+    const validChannels = channels.filter(channel => channel?.label && channel?.file);
+    if (!validChannels.length) {
+        return;
+    }
+
+    const existingChannels = collectDiscordArchiveChannelsFromEditor();
+    const mergedByFile = new Map();
+
+    existingChannels.forEach(channel => {
+        mergedByFile.set(channel.file, channel);
+    });
+
+    validChannels.forEach(channel => {
+        mergedByFile.set(channel.file, channel);
+    });
+
+    renderDiscordArchiveChannelRows(Array.from(mergedByFile.values()));
+}
+
 function removeDiscordArchiveChannelRow(button) {
     const row = button?.closest('.discord-archive-channel-row');
     const container = document.getElementById('discordArchiveChannelsEditor');
@@ -768,9 +788,34 @@ function handleDiscordArchiveImport() {
     }
 
     const importedChannels = parseDiscordArchiveImportInput(rawValue);
-    renderDiscordArchiveChannelRows(importedChannels);
+    appendDiscordArchiveChannelRows(importedChannels);
     input.value = '';
-    showToast(`${importedChannels.length} Discord-Kanäle importiert.`, 'success');
+    showToast(`${importedChannels.length} Discord-Kanäle hinzugefügt oder aktualisiert.`, 'success');
+}
+
+function handleDiscordArchiveFolderImport() {
+    const input = document.getElementById('discordArchiveFolderInput');
+    const files = Array.from(input?.files || []);
+
+    if (!files.length) {
+        showToast('Wähle zuerst einen Discord-Export-Ordner aus.', 'warning');
+        return;
+    }
+
+    const htmlFiles = files
+        .filter(file => file.name.toLowerCase().endsWith('.html'))
+        .filter(file => !/[/\\]assets[/\\]/i.test(file.webkitRelativePath || ''))
+        .map(file => file.webkitRelativePath || file.name);
+
+    if (!htmlFiles.length) {
+        showToast('Im gewählten Ordner wurden keine HTML-Chatdateien gefunden.', 'warning');
+        return;
+    }
+
+    const importedChannels = parseDiscordArchiveImportInput(htmlFiles.join('\n'));
+    appendDiscordArchiveChannelRows(importedChannels);
+    input.value = '';
+    showToast(`${importedChannels.length} Kanäle aus dem Ordner importiert.`, 'success');
 }
 
 function getConfiguredDiscordArchiveData() {
@@ -5065,6 +5110,7 @@ document.getElementById('discordArchiveSelect')?.addEventListener('change', (eve
 });
 document.getElementById('addDiscordArchiveChannelButton')?.addEventListener('click', () => addDiscordArchiveChannelRow());
 document.getElementById('importDiscordArchiveButton')?.addEventListener('click', handleDiscordArchiveImport);
+document.getElementById('importDiscordArchiveFolderButton')?.addEventListener('click', handleDiscordArchiveFolderImport);
 document.querySelector('.tab-navigation')?.addEventListener('click', handleClanTabClick);
 document.getElementById('mobileMenu')?.addEventListener('click', handleClanTabClick);
 document.querySelector('.content-area')?.addEventListener('click', handleClanTabClick);
