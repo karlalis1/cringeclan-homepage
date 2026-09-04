@@ -19,6 +19,10 @@ let settings = {
     discordArchiveTitle: 'Discord Chat Export',
     discordArchiveDescription: 'Hier kannst du exportierte Discord-Kanäle als Archiv einbinden, ohne sie über Firebase Storage laufen zu lassen.',
     discordArchiveChannels: [],
+    discordArchiveGithubOwner: '',
+    discordArchiveGithubRepo: '',
+    discordArchiveGithubBranch: 'main',
+    discordArchiveGithubPath: 'discord-archive',
     contactTitle: 'Kontaktiere uns',
     contactIntro: 'Du willst mit dem Clan schreiben oder einem Projekt beitreten? Discord ist der schnellste Weg.',
     contactDiscordTitle: 'Discord',
@@ -672,21 +676,32 @@ function addDiscordArchiveChannelRow(channel = {}) {
 function appendDiscordArchiveChannelRows(channels = []) {
     const validChannels = channels.filter(channel => channel?.label && channel?.file);
     if (!validChannels.length) {
-        return;
+        return { added: 0, skipped: 0 };
     }
 
     const existingChannels = collectDiscordArchiveChannelsFromEditor();
-    const mergedByFile = new Map();
-
-    existingChannels.forEach(channel => {
-        mergedByFile.set(channel.file, channel);
-    });
+    const existingFiles = new Set(existingChannels.map(channel => channel.file));
+    const channelsToAdd = [];
+    let skipped = 0;
 
     validChannels.forEach(channel => {
-        mergedByFile.set(channel.file, channel);
+        if (existingFiles.has(channel.file)) {
+            skipped += 1;
+            return;
+        }
+
+        existingFiles.add(channel.file);
+        channelsToAdd.push(channel);
     });
 
-    renderDiscordArchiveChannelRows(Array.from(mergedByFile.values()));
+    if (channelsToAdd.length) {
+        renderDiscordArchiveChannelRows(existingChannels.concat(channelsToAdd));
+    }
+
+    return {
+        added: channelsToAdd.length,
+        skipped
+    };
 }
 
 function removeDiscordArchiveChannelRow(button) {
@@ -788,34 +803,69 @@ function handleDiscordArchiveImport() {
     }
 
     const importedChannels = parseDiscordArchiveImportInput(rawValue);
-    appendDiscordArchiveChannelRows(importedChannels);
+    const result = appendDiscordArchiveChannelRows(importedChannels);
     input.value = '';
-    showToast(`${importedChannels.length} Discord-Kanäle hinzugefügt oder aktualisiert.`, 'success');
+    showToast(`${result.added} hinzugefügt, ${result.skipped} übersprungen.`, 'success');
 }
 
-function handleDiscordArchiveFolderImport() {
-    const input = document.getElementById('discordArchiveFolderInput');
-    const files = Array.from(input?.files || []);
+function getDiscordArchiveGitHubConfigFromInputs() {
+    return {
+        owner: document.getElementById('discordArchiveGithubOwner')?.value.trim() || settings.discordArchiveGithubOwner || '',
+        repo: document.getElementById('discordArchiveGithubRepo')?.value.trim() || settings.discordArchiveGithubRepo || '',
+        branch: document.getElementById('discordArchiveGithubBranch')?.value.trim() || settings.discordArchiveGithubBranch || 'main',
+        path: document.getElementById('discordArchiveGithubPath')?.value.trim() || settings.discordArchiveGithubPath || 'discord-archive',
+        token: document.getElementById('githubToken')?.value.trim() || settings.githubToken || ''
+    };
+}
 
-    if (!files.length) {
-        showToast('Wähle zuerst einen Discord-Export-Ordner aus.', 'warning');
+async function handleDiscordArchiveFolderImport() {
+    const config = getDiscordArchiveGitHubConfigFromInputs();
+
+    if (!config.owner || !config.repo || !config.path) {
+        showToast('Bitte GitHub Owner, Repository und Ordnerpfad ausfüllen.', 'warning');
         return;
     }
 
-    const htmlFiles = files
-        .filter(file => file.name.toLowerCase().endsWith('.html'))
-        .filter(file => !/[/\\]assets[/\\]/i.test(file.webkitRelativePath || ''))
-        .map(file => file.webkitRelativePath || file.name);
+    const normalizedPath = config.path.replace(/^\/+|\/+$/g, '');
+    const encodedPath = normalizedPath.split('/').map(segment => encodeURIComponent(segment)).join('/');
+    const requestUrl = `https://api.github.com/repos/${encodeURIComponent(config.owner)}/${encodeURIComponent(config.repo)}/contents/${encodedPath}?ref=${encodeURIComponent(config.branch)}`;
+    const headers = {
+        'Accept': 'application/vnd.github+json'
+    };
 
-    if (!htmlFiles.length) {
-        showToast('Im gewählten Ordner wurden keine HTML-Chatdateien gefunden.', 'warning');
-        return;
+    if (config.token) {
+        headers.Authorization = `Bearer ${config.token}`;
     }
 
-    const importedChannels = parseDiscordArchiveImportInput(htmlFiles.join('\n'));
-    appendDiscordArchiveChannelRows(importedChannels);
-    input.value = '';
-    showToast(`${importedChannels.length} Kanäle aus dem Ordner importiert.`, 'success');
+    try {
+        const response = await fetch(requestUrl, { headers });
+        if (!response.ok) {
+            throw new Error(`GitHub antwortet mit ${response.status}`);
+        }
+
+        const entries = await response.json();
+        if (!Array.isArray(entries)) {
+            throw new Error('Der GitHub-Ordner konnte nicht gelesen werden');
+        }
+
+        const htmlFiles = entries
+            .filter(entry => entry?.type === 'file')
+            .filter(entry => entry.name?.toLowerCase().endsWith('.html'))
+            .filter(entry => !/[/\\]assets[/\\]/i.test(entry.path || ''))
+            .map(entry => entry.path || entry.name);
+
+        if (!htmlFiles.length) {
+            showToast('Im GitHub-Ordner wurden keine HTML-Chatdateien gefunden.', 'warning');
+            return;
+        }
+
+        const importedChannels = parseDiscordArchiveImportInput(htmlFiles.join('\n'));
+        const result = appendDiscordArchiveChannelRows(importedChannels);
+        showToast(`${result.added} aus GitHub hinzugefügt, ${result.skipped} übersprungen.`, 'success');
+    } catch (error) {
+        console.error('GitHub archive import error:', error);
+        showToast('GitHub-Ordner konnte nicht importiert werden.', 'error');
+    }
 }
 
 function getConfiguredDiscordArchiveData() {
@@ -1509,6 +1559,8 @@ function applySettingsDefaults() {
     if (!settings.discordArchiveTitle) settings.discordArchiveTitle = 'Discord Chat Export';
     if (!settings.discordArchiveDescription) settings.discordArchiveDescription = 'Hier kannst du exportierte Discord-Kanäle als Archiv einbinden, ohne sie über Firebase Storage laufen zu lassen.';
     if (!Array.isArray(settings.discordArchiveChannels)) settings.discordArchiveChannels = [];
+    if (!settings.discordArchiveGithubBranch) settings.discordArchiveGithubBranch = 'main';
+    if (!settings.discordArchiveGithubPath) settings.discordArchiveGithubPath = 'discord-archive';
 }
 
 function renderContactContent() {
@@ -3419,6 +3471,10 @@ function loadSettings() {
     document.getElementById('contactMinecraftAdminDetail').value = settings.contactMinecraftDetail || '';
     document.getElementById('discordArchiveAdminTitle').value = settings.discordArchiveTitle || '';
     document.getElementById('discordArchiveAdminDescription').value = settings.discordArchiveDescription || '';
+    document.getElementById('discordArchiveGithubOwner').value = settings.discordArchiveGithubOwner || '';
+    document.getElementById('discordArchiveGithubRepo').value = settings.discordArchiveGithubRepo || '';
+    document.getElementById('discordArchiveGithubBranch').value = settings.discordArchiveGithubBranch || 'main';
+    document.getElementById('discordArchiveGithubPath').value = settings.discordArchiveGithubPath || 'discord-archive';
     renderDiscordArchiveChannelRows(settings.discordArchiveChannels);
     document.getElementById('discordArchiveImportInput').value = '';
     document.getElementById('defaultTheme').value = settings.defaultTheme || 'dark';
@@ -3885,6 +3941,10 @@ function handleSettingsUpdate(e) {
     const contactMinecraftDetail = document.getElementById('contactMinecraftAdminDetail').value.trim();
     const discordArchiveTitle = document.getElementById('discordArchiveAdminTitle').value.trim();
     const discordArchiveDescription = document.getElementById('discordArchiveAdminDescription').value.trim();
+    const discordArchiveGithubOwner = document.getElementById('discordArchiveGithubOwner').value.trim();
+    const discordArchiveGithubRepo = document.getElementById('discordArchiveGithubRepo').value.trim();
+    const discordArchiveGithubBranch = document.getElementById('discordArchiveGithubBranch').value.trim();
+    const discordArchiveGithubPath = document.getElementById('discordArchiveGithubPath').value.trim();
     const defaultTheme = document.getElementById('defaultTheme').value;
     const sessionTimeout = parseInt(document.getElementById('sessionTimeout').value) || 30;
     const enableAuditLog = document.getElementById('enableAuditLog').checked;
@@ -3919,6 +3979,10 @@ function handleSettingsUpdate(e) {
     settings.discordArchiveTitle = discordArchiveTitle || 'Discord Chat Export';
     settings.discordArchiveDescription = discordArchiveDescription || 'Hier kannst du exportierte Discord-Kanäle als Archiv einbinden, ohne sie über Firebase Storage laufen zu lassen.';
     settings.discordArchiveChannels = parsedDiscordArchiveChannels;
+    settings.discordArchiveGithubOwner = discordArchiveGithubOwner;
+    settings.discordArchiveGithubRepo = discordArchiveGithubRepo;
+    settings.discordArchiveGithubBranch = discordArchiveGithubBranch || 'main';
+    settings.discordArchiveGithubPath = discordArchiveGithubPath || 'discord-archive';
     
     settings.defaultTheme = defaultTheme;
     settings.sessionTimeout = sessionTimeout;
