@@ -16,6 +16,9 @@ let settings = {
     siteDescription: 'CRINGECLAN - Projekte, Mitglieder und Community an einem Ort.',
     memberAreaText: 'Hier koennen interne Infos, Hinweise oder kleine Clan-Updates stehen.',
     clanTabOrder: ['startseite', 'projekte', 'ereignisse', 'intern', 'kontakt', 'mitglieder'],
+    discordArchiveTitle: 'Discord Chat Export',
+    discordArchiveDescription: 'Hier kannst du exportierte Discord-Kanäle als Archiv einbinden, ohne sie über Firebase Storage laufen zu lassen.',
+    discordArchiveChannels: [],
     contactTitle: 'Kontaktiere uns',
     contactIntro: 'Du willst mit dem Clan schreiben oder einem Projekt beitreten? Discord ist der schnellste Weg.',
     contactDiscordTitle: 'Discord',
@@ -91,9 +94,19 @@ const CLAN_TAB_OPTIONS = [
     { id: 'projekte', label: 'Projekte' },
     { id: 'ereignisse', label: 'Ereignisse' },
     { id: 'intern', label: 'Intern', requiresClanAuth: true },
+    { id: 'discord-archiv', label: 'Discord Archiv', requiresClanAuth: true },
     { id: 'kontakt', label: 'Kontakt' },
     { id: 'mitglieder', label: 'Mitglieder' }
 ];
+const DISCORD_ARCHIVE_MANIFEST_PATH = 'discord-archive/manifest.json';
+let discordArchiveData = {
+    title: 'Discord Chat Export',
+    description: 'Hier kannst du exportierte Discord-Kanäle als Archiv einbinden, ohne sie über Firebase Storage laufen zu lassen.',
+    channels: [],
+    loaded: false,
+    error: ''
+};
+let selectedDiscordArchiveChannel = '';
 
 // Project Type Configuration
 const projectTypeConfig = {
@@ -573,6 +586,179 @@ function renderInternalContent() {
     content.classList.toggle('internal-content-empty', !text);
 }
 
+function normalizeDiscordArchiveChannel(channel, index = 0) {
+    const label = channel?.label?.trim() || channel?.title?.trim() || `Archiv ${index + 1}`;
+    const file = (channel?.file || channel?.path || '').trim();
+    const normalizedFile = /^(https?:)?\/\//i.test(file) || file.startsWith('/')
+        ? file
+        : file.startsWith('discord-archive/')
+            ? file
+            : `discord-archive/${file.replace(/^\.?[\\/]+/, '')}`;
+
+    return {
+        id: channel?.id || `discord-archive-${index + 1}`,
+        label,
+        category: channel?.category?.trim() || '',
+        file: normalizedFile
+    };
+}
+
+function formatDiscordArchiveChannelsInput(channels = []) {
+    return channels.map(channel => {
+        const parts = [];
+        if (channel.category) {
+            parts.push(channel.category);
+        }
+        parts.push(channel.label || '');
+        parts.push(channel.file || '');
+        return parts.join(' | ');
+    }).join('\n');
+}
+
+function parseDiscordArchiveChannelsInput(input) {
+    const lines = String(input || '')
+        .split(/\r?\n/)
+        .map(line => line.trim())
+        .filter(Boolean);
+
+    return lines.map((line, index) => {
+        const parts = line.split('|').map(part => part.trim()).filter(Boolean);
+
+        if (parts.length < 2) {
+            throw new Error(`Zeile ${index + 1} im Discord-Archiv ist ungültig. Nutze \`Label | Datei\` oder \`Kategorie | Label | Datei\`.`);
+        }
+
+        const [label, file] = parts.length === 2
+            ? parts
+            : [parts[1], parts.slice(2).join(' | ')];
+
+        const category = parts.length === 2 ? '' : parts[0];
+        return normalizeDiscordArchiveChannel({
+            id: `discord-archive-custom-${index + 1}`,
+            category,
+            label,
+            file
+        }, index);
+    });
+}
+
+function getConfiguredDiscordArchiveData() {
+    const configuredChannels = Array.isArray(settings.discordArchiveChannels)
+        ? settings.discordArchiveChannels
+            .map((channel, index) => normalizeDiscordArchiveChannel(channel, index))
+            .filter(channel => channel.label && channel.file)
+        : [];
+
+    if (configuredChannels.length) {
+        return {
+            title: settings.discordArchiveTitle || 'Discord Chat Export',
+            description: settings.discordArchiveDescription || 'Hier kannst du exportierte Discord-Kanäle als Archiv einbinden, ohne sie über Firebase Storage laufen zu lassen.',
+            channels: configuredChannels
+        };
+    }
+
+    return {
+        title: discordArchiveData.title,
+        description: discordArchiveData.description,
+        channels: discordArchiveData.channels
+    };
+}
+
+async function loadDiscordArchiveManifest() {
+    try {
+        const response = await fetch(DISCORD_ARCHIVE_MANIFEST_PATH, { cache: 'no-store' });
+        if (!response.ok) {
+            throw new Error(`manifest-${response.status}`);
+        }
+
+        const manifest = await response.json();
+        const channels = Array.isArray(manifest?.channels)
+            ? manifest.channels
+                .map((channel, index) => normalizeDiscordArchiveChannel(channel, index))
+                .filter(channel => channel.file && channel.label)
+            : [];
+
+        discordArchiveData = {
+            title: manifest?.title?.trim() || 'Discord Chat Export',
+            description: manifest?.description?.trim() || 'Hier kannst du exportierte Discord-Kanäle als Archiv einbinden, ohne sie über Firebase Storage laufen zu lassen.',
+            channels,
+            loaded: true,
+            error: ''
+        };
+
+        selectedDiscordArchiveChannel = channels[0]?.id || '';
+    } catch (error) {
+        console.warn('Discord archive manifest not available:', error);
+        discordArchiveData = {
+            title: 'Discord Chat Export',
+            description: 'Lege exportierte Discord-HTML-Dateien mit dem assets-Ordner in `discord-archive/` ab und trage sie in der manifest.json ein.',
+            channels: [],
+            loaded: false,
+            error: error?.message || 'manifest-missing'
+        };
+        selectedDiscordArchiveChannel = '';
+    }
+}
+
+function renderDiscordArchiveTab() {
+    const title = document.getElementById('discordArchiveTitle');
+    const description = document.getElementById('discordArchiveDescription');
+    const status = document.getElementById('discordArchiveStatus');
+    const select = document.getElementById('discordArchiveSelect');
+    const empty = document.getElementById('discordArchiveEmpty');
+    const frame = document.getElementById('discordArchiveFrame');
+
+    if (!title || !description || !status || !select || !empty || !frame) {
+        return;
+    }
+
+    const activeArchiveData = getConfiguredDiscordArchiveData();
+
+    title.textContent = activeArchiveData.title;
+    description.textContent = activeArchiveData.description;
+    select.innerHTML = '';
+
+    if (!activeArchiveData.channels.length) {
+        status.textContent = 'Nicht eingerichtet';
+        status.className = 'status-pill warning';
+        select.disabled = true;
+        select.innerHTML = '<option value="">Kein Archiv verfügbar</option>';
+        empty.classList.remove('hidden');
+        frame.classList.add('hidden');
+        frame.removeAttribute('src');
+        return;
+    }
+
+    status.textContent = `${activeArchiveData.channels.length} Kanäle`;
+    status.className = 'status-pill success';
+    select.disabled = false;
+
+    activeArchiveData.channels.forEach(channel => {
+        const option = document.createElement('option');
+        option.value = channel.id;
+        option.textContent = channel.category ? `${channel.category} · ${channel.label}` : channel.label;
+        select.appendChild(option);
+    });
+
+    if (!activeArchiveData.channels.some(channel => channel.id === selectedDiscordArchiveChannel)) {
+        selectedDiscordArchiveChannel = activeArchiveData.channels[0].id;
+    }
+
+    select.value = selectedDiscordArchiveChannel;
+
+    const activeChannel = activeArchiveData.channels.find(channel => channel.id === selectedDiscordArchiveChannel);
+    if (!activeChannel) {
+        empty.classList.remove('hidden');
+        frame.classList.add('hidden');
+        frame.removeAttribute('src');
+        return;
+    }
+
+    empty.classList.add('hidden');
+    frame.classList.remove('hidden');
+    frame.src = encodeURI(activeChannel.file);
+}
+
 function renderMemberTabPermissions(member = null) {
     const container = document.getElementById('memberTabPermissions');
     if (!container) {
@@ -624,7 +810,7 @@ function updateClanAccessView() {
         element.classList.toggle('hidden', !canManageAllContent());
     });
 
-    if (!hasAccess && document.getElementById('intern')?.classList.contains('active')) {
+    if (!hasAccess && document.querySelector('.tab-content.active[data-clan-auth="true"]')) {
         switchClanTab('startseite');
     }
 }
@@ -1144,6 +1330,9 @@ function applySettingsDefaults() {
     if (!settings.contactMinecraftTitle) settings.contactMinecraftTitle = 'Minecraft';
     if (!settings.contactMinecraftText) settings.contactMinecraftText = 'Server und Events laufen über den Clan und Discord.';
     if (!settings.contactMinecraftDetail) settings.contactMinecraftDetail = 'Server-IP: coming soon';
+    if (!settings.discordArchiveTitle) settings.discordArchiveTitle = 'Discord Chat Export';
+    if (!settings.discordArchiveDescription) settings.discordArchiveDescription = 'Hier kannst du exportierte Discord-Kanäle als Archiv einbinden, ohne sie über Firebase Storage laufen zu lassen.';
+    if (!Array.isArray(settings.discordArchiveChannels)) settings.discordArchiveChannels = [];
 }
 
 function renderContactContent() {
@@ -1385,6 +1574,7 @@ function refreshAppUI() {
     renderMembersOverview();
     renderEventsOverview();
     renderInternalContent();
+    renderDiscordArchiveTab();
     renderContactContent();
     updateStatsDisplay();
     loadAdminProjects();
@@ -3051,6 +3241,9 @@ function loadSettings() {
     document.getElementById('contactMinecraftAdminTitle').value = settings.contactMinecraftTitle || '';
     document.getElementById('contactMinecraftAdminText').value = settings.contactMinecraftText || '';
     document.getElementById('contactMinecraftAdminDetail').value = settings.contactMinecraftDetail || '';
+    document.getElementById('discordArchiveAdminTitle').value = settings.discordArchiveTitle || '';
+    document.getElementById('discordArchiveAdminDescription').value = settings.discordArchiveDescription || '';
+    document.getElementById('discordArchiveChannelsInput').value = formatDiscordArchiveChannelsInput(settings.discordArchiveChannels);
     document.getElementById('defaultTheme').value = settings.defaultTheme || 'dark';
     document.getElementById('sessionTimeout').value = settings.sessionTimeout || 30;
     document.getElementById('enableAuditLog').checked = settings.enableAuditLog;
@@ -3513,9 +3706,20 @@ function handleSettingsUpdate(e) {
     const contactMinecraftTitle = document.getElementById('contactMinecraftAdminTitle').value.trim();
     const contactMinecraftText = document.getElementById('contactMinecraftAdminText').value.trim();
     const contactMinecraftDetail = document.getElementById('contactMinecraftAdminDetail').value.trim();
+    const discordArchiveTitle = document.getElementById('discordArchiveAdminTitle').value.trim();
+    const discordArchiveDescription = document.getElementById('discordArchiveAdminDescription').value.trim();
+    const discordArchiveChannelsInput = document.getElementById('discordArchiveChannelsInput').value;
     const defaultTheme = document.getElementById('defaultTheme').value;
     const sessionTimeout = parseInt(document.getElementById('sessionTimeout').value) || 30;
     const enableAuditLog = document.getElementById('enableAuditLog').checked;
+    let parsedDiscordArchiveChannels = [];
+
+    try {
+        parsedDiscordArchiveChannels = parseDiscordArchiveChannelsInput(discordArchiveChannelsInput);
+    } catch (error) {
+        showToast(error.message, 'error');
+        return;
+    }
     
     if (siteTitle) {
         settings.siteTitle = siteTitle;
@@ -3536,12 +3740,16 @@ function handleSettingsUpdate(e) {
     settings.contactMinecraftTitle = contactMinecraftTitle || 'Minecraft';
     settings.contactMinecraftText = contactMinecraftText || 'Server und Events laufen über den Clan und Discord.';
     settings.contactMinecraftDetail = contactMinecraftDetail || 'Server-IP: coming soon';
+    settings.discordArchiveTitle = discordArchiveTitle || 'Discord Chat Export';
+    settings.discordArchiveDescription = discordArchiveDescription || 'Hier kannst du exportierte Discord-Kanäle als Archiv einbinden, ohne sie über Firebase Storage laufen zu lassen.';
+    settings.discordArchiveChannels = parsedDiscordArchiveChannels;
     
     settings.defaultTheme = defaultTheme;
     settings.sessionTimeout = sessionTimeout;
     settings.enableAuditLog = enableAuditLog;
     
     renderContactContent();
+    renderDiscordArchiveTab();
     saveData();
     showToast('Einstellungen gespeichert!', 'success');
     logActivity('settings_change', 'Updated settings');
@@ -4276,7 +4484,7 @@ async function clearAllData() {
 // ========================================
 
 function switchClanTab(tabId) {
-    if (tabId === 'intern' && !hasClanAccess()) {
+    if (document.getElementById(tabId)?.dataset?.clanAuth === 'true' && !hasClanAccess()) {
         tabId = 'startseite';
     }
 
@@ -4516,6 +4724,7 @@ async function init() {
         applyAuthState(null);
         initFirebaseAuth();
         await loadData();
+        await loadDiscordArchiveManifest();
         refreshAppUI();
         initParticles();
         initFAQ();
@@ -4719,6 +4928,10 @@ document.getElementById('projectSearch').addEventListener('input', handleSearch)
 document.querySelector('.filter-buttons').addEventListener('click', handleFilter);
 document.getElementById('sortOrder')?.addEventListener('change', handleSort);
 document.getElementById('viewToggle')?.addEventListener('click', toggleViewMode);
+document.getElementById('discordArchiveSelect')?.addEventListener('change', (event) => {
+    selectedDiscordArchiveChannel = event.target.value;
+    renderDiscordArchiveTab();
+});
 document.querySelector('.tab-navigation')?.addEventListener('click', handleClanTabClick);
 document.getElementById('mobileMenu')?.addEventListener('click', handleClanTabClick);
 document.querySelector('.content-area')?.addEventListener('click', handleClanTabClick);
