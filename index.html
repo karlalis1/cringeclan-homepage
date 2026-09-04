@@ -793,9 +793,24 @@
                             <textarea id="discordArchiveAdminDescription" rows="2" placeholder="Kurze Beschreibung für den Mitglieder-Tab"></textarea>
                         </div>
                         <div class="form-group">
-                            <label for="discordArchiveChannelsInput">Discord-Archiv Kanäle</label>
-                            <textarea id="discordArchiveChannelsInput" rows="8" placeholder="START | news🆕 | Cringeclan - START - news🆕 [1221802407969685545].html"></textarea>
-                            <small class="admin-field-hint">Eine Zeile pro Kanal. Format: `Kategorie | Label | Datei oder URL`. Ohne Kategorie geht auch: `Label | Datei oder URL`. Dateien liegen am besten in `discord-archive/`, externe URLs oder NAS-Links funktionieren ebenfalls.</small>
+                            <label>Discord-Archiv Kanäle</label>
+                            <div id="discordArchiveChannelsEditor" class="discord-archive-channels-editor"></div>
+                            <div class="bulk-actions discord-archive-actions">
+                                <button type="button" class="btn btn-secondary" id="addDiscordArchiveChannelButton">
+                                    <i class="fas fa-plus"></i> Kanal hinzufügen
+                                </button>
+                            </div>
+                            <small class="admin-field-hint">Pro Kanal kannst du Kategorie, Label und Datei oder URL pflegen. Relative Dateien landen automatisch im Ordner `discord-archive/`.</small>
+                        </div>
+                        <div class="form-group">
+                            <label for="discordArchiveImportInput">Importhilfe für Export-Dateinamen</label>
+                            <textarea id="discordArchiveImportInput" rows="6" placeholder="Cringeclan - START - news🆕 [1221802407969685545].html"></textarea>
+                            <div class="bulk-actions discord-archive-actions">
+                                <button type="button" class="btn btn-secondary" id="importDiscordArchiveButton">
+                                    <i class="fas fa-file-import"></i> Dateinamen importieren
+                                </button>
+                            </div>
+                            <small class="admin-field-hint">Hier kannst du rohe Export-Dateinamen einfügen. Die Importhilfe erkennt automatisch `Kategorie`, `Label` und die HTML-Datei.</small>
                         </div>
                         <button type="submit" class="btn btn-primary">
                             <i class="fas fa-save"></i> Einstellungen speichern

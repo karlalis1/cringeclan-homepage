@@ -615,31 +615,162 @@ function formatDiscordArchiveChannelsInput(channels = []) {
     }).join('\n');
 }
 
-function parseDiscordArchiveChannelsInput(input) {
+function createDiscordArchiveChannelRowHtml(channel = {}) {
+    return `
+        <input
+            type="text"
+            class="discord-archive-category"
+            placeholder="Kategorie"
+            value="${sanitizeInput(channel.category || '')}"
+        >
+        <input
+            type="text"
+            class="discord-archive-label"
+            placeholder="Label"
+            value="${sanitizeInput(channel.label || '')}"
+        >
+        <input
+            type="text"
+            class="discord-archive-file"
+            placeholder="Datei oder URL"
+            value="${sanitizeInput(channel.file || '')}"
+        >
+        <button type="button" class="btn btn-danger btn-icon discord-archive-remove" onclick="removeDiscordArchiveChannelRow(this)" aria-label="Kanal entfernen">
+            <i class="fas fa-trash"></i>
+        </button>
+    `;
+}
+
+function renderDiscordArchiveChannelRows(channels = []) {
+    const container = document.getElementById('discordArchiveChannelsEditor');
+    if (!container) {
+        return;
+    }
+
+    container.innerHTML = '';
+
+    if (!channels.length) {
+        addDiscordArchiveChannelRow();
+        return;
+    }
+
+    channels.forEach(channel => addDiscordArchiveChannelRow(channel));
+}
+
+function addDiscordArchiveChannelRow(channel = {}) {
+    const container = document.getElementById('discordArchiveChannelsEditor');
+    if (!container) {
+        return;
+    }
+
+    const row = document.createElement('div');
+    row.className = 'discord-archive-channel-row';
+    row.innerHTML = createDiscordArchiveChannelRowHtml(channel);
+    container.appendChild(row);
+}
+
+function removeDiscordArchiveChannelRow(button) {
+    const row = button?.closest('.discord-archive-channel-row');
+    const container = document.getElementById('discordArchiveChannelsEditor');
+    if (!row || !container) {
+        return;
+    }
+
+    row.remove();
+
+    if (!container.children.length) {
+        addDiscordArchiveChannelRow();
+    }
+}
+
+function collectDiscordArchiveChannelsFromEditor() {
+    return Array.from(document.querySelectorAll('#discordArchiveChannelsEditor .discord-archive-channel-row'))
+        .map((row, index) => {
+            const category = row.querySelector('.discord-archive-category')?.value.trim() || '';
+            const label = row.querySelector('.discord-archive-label')?.value.trim() || '';
+            const file = row.querySelector('.discord-archive-file')?.value.trim() || '';
+
+            if (!category && !label && !file) {
+                return null;
+            }
+
+            if (!label || !file) {
+                throw new Error(`Discord-Archiv Kanal ${index + 1} braucht mindestens Label und Datei oder URL.`);
+            }
+
+            return normalizeDiscordArchiveChannel({
+                id: `discord-archive-custom-${index + 1}`,
+                category,
+                label,
+                file
+            }, index);
+        })
+        .filter(Boolean);
+}
+
+function parseDiscordArchiveImportInput(input) {
     const lines = String(input || '')
         .split(/\r?\n/)
         .map(line => line.trim())
         .filter(Boolean);
 
     return lines.map((line, index) => {
-        const parts = line.split('|').map(part => part.trim()).filter(Boolean);
+        if (line.includes('|')) {
+            const parts = line.split('|').map(part => part.trim()).filter(Boolean);
+            if (parts.length < 2) {
+                throw new Error(`Zeile ${index + 1} im Discord-Import ist ungültig.`);
+            }
 
-        if (parts.length < 2) {
-            throw new Error(`Zeile ${index + 1} im Discord-Archiv ist ungültig. Nutze \`Label | Datei\` oder \`Kategorie | Label | Datei\`.`);
+            const [label, file] = parts.length === 2
+                ? parts
+                : [parts[1], parts.slice(2).join(' | ')];
+
+            const category = parts.length === 2 ? '' : parts[0];
+            return normalizeDiscordArchiveChannel({
+                id: `discord-archive-custom-${index + 1}`,
+                category,
+                label,
+                file
+            }, index);
         }
 
-        const [label, file] = parts.length === 2
-            ? parts
-            : [parts[1], parts.slice(2).join(' | ')];
+        const normalizedLine = line.replace(/^["']|["']$/g, '');
+        const fileName = normalizedLine.split(/[\\/]/).pop() || normalizedLine;
+        const exportMatch = fileName.match(/^(?:.+?)\s-\s(.+?)\s-\s(.+?)\s\[(\d+)\]\.html$/i);
 
-        const category = parts.length === 2 ? '' : parts[0];
+        let category = '';
+        let label = fileName.replace(/\.html$/i, '');
+
+        if (exportMatch) {
+            category = exportMatch[1].trim();
+            label = exportMatch[2].trim();
+        }
+
         return normalizeDiscordArchiveChannel({
             id: `discord-archive-custom-${index + 1}`,
             category,
             label,
-            file
+            file: fileName
         }, index);
     });
+}
+
+function handleDiscordArchiveImport() {
+    const input = document.getElementById('discordArchiveImportInput');
+    if (!input) {
+        return;
+    }
+
+    const rawValue = input.value.trim();
+    if (!rawValue) {
+        showToast('Füge zuerst Discord-Export-Dateinamen ein.', 'warning');
+        return;
+    }
+
+    const importedChannels = parseDiscordArchiveImportInput(rawValue);
+    renderDiscordArchiveChannelRows(importedChannels);
+    input.value = '';
+    showToast(`${importedChannels.length} Discord-Kanäle importiert.`, 'success');
 }
 
 function getConfiguredDiscordArchiveData() {
@@ -3243,7 +3374,8 @@ function loadSettings() {
     document.getElementById('contactMinecraftAdminDetail').value = settings.contactMinecraftDetail || '';
     document.getElementById('discordArchiveAdminTitle').value = settings.discordArchiveTitle || '';
     document.getElementById('discordArchiveAdminDescription').value = settings.discordArchiveDescription || '';
-    document.getElementById('discordArchiveChannelsInput').value = formatDiscordArchiveChannelsInput(settings.discordArchiveChannels);
+    renderDiscordArchiveChannelRows(settings.discordArchiveChannels);
+    document.getElementById('discordArchiveImportInput').value = '';
     document.getElementById('defaultTheme').value = settings.defaultTheme || 'dark';
     document.getElementById('sessionTimeout').value = settings.sessionTimeout || 30;
     document.getElementById('enableAuditLog').checked = settings.enableAuditLog;
@@ -3708,14 +3840,13 @@ function handleSettingsUpdate(e) {
     const contactMinecraftDetail = document.getElementById('contactMinecraftAdminDetail').value.trim();
     const discordArchiveTitle = document.getElementById('discordArchiveAdminTitle').value.trim();
     const discordArchiveDescription = document.getElementById('discordArchiveAdminDescription').value.trim();
-    const discordArchiveChannelsInput = document.getElementById('discordArchiveChannelsInput').value;
     const defaultTheme = document.getElementById('defaultTheme').value;
     const sessionTimeout = parseInt(document.getElementById('sessionTimeout').value) || 30;
     const enableAuditLog = document.getElementById('enableAuditLog').checked;
     let parsedDiscordArchiveChannels = [];
 
     try {
-        parsedDiscordArchiveChannels = parseDiscordArchiveChannelsInput(discordArchiveChannelsInput);
+        parsedDiscordArchiveChannels = collectDiscordArchiveChannelsFromEditor();
     } catch (error) {
         showToast(error.message, 'error');
         return;
@@ -4932,6 +5063,8 @@ document.getElementById('discordArchiveSelect')?.addEventListener('change', (eve
     selectedDiscordArchiveChannel = event.target.value;
     renderDiscordArchiveTab();
 });
+document.getElementById('addDiscordArchiveChannelButton')?.addEventListener('click', () => addDiscordArchiveChannelRow());
+document.getElementById('importDiscordArchiveButton')?.addEventListener('click', handleDiscordArchiveImport);
 document.querySelector('.tab-navigation')?.addEventListener('click', handleClanTabClick);
 document.getElementById('mobileMenu')?.addEventListener('click', handleClanTabClick);
 document.querySelector('.content-area')?.addEventListener('click', handleClanTabClick);
