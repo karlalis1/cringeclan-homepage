@@ -380,7 +380,7 @@ function canAccessAdminTab(tabId) {
 }
 
 function getAvailableAdminTabs() {
-    return ['projects', 'events', 'stats', 'settings', 'members', 'socials', 'internal', 'activity']
+    return ['projects', 'events', 'stats', 'settings', 'members', 'socials', 'internal', 'nnn', 'activity']
         .filter(tabId => canAccessAdminTab(tabId));
 }
 
@@ -547,6 +547,13 @@ function updateAuthInterface() {
 
     if (signOutButton) {
         signOutButton.classList.toggle('hidden', authState.role === 'guest');
+    }
+
+    const adminIdentity = document.getElementById('adminIdentity');
+    if (adminIdentity) {
+        adminIdentity.innerHTML = authState.role === 'guest'
+            ? ''
+            : `${sanitizeInput(authState.email || 'unbekannt')} · <strong>${authState.role === 'admin' ? 'Admin' : 'Mitglied'}</strong>`;
     }
 
     if (authIntro) {
@@ -1021,8 +1028,19 @@ function activateAdminTab(tabId) {
     document.querySelectorAll('.admin-tab').forEach(tab => tab.classList.remove('active'));
     document.querySelectorAll('.admin-tab-content').forEach(content => content.classList.remove('active'));
 
-    document.querySelector(`.admin-tab[data-tab="${tabId}"]`)?.classList.add('active');
+    const activeTab = document.querySelector(`.admin-tab[data-tab="${tabId}"]`);
+    activeTab?.classList.add('active');
     document.getElementById(`${tabId}Tab`)?.classList.add('active');
+    document.querySelectorAll('.admin-tab').forEach(tab => tab.setAttribute('aria-selected', String(tab === activeTab)));
+
+    // Keep the active tab visible in the scrollable tab row
+    const tabRow = activeTab?.parentElement;
+    if (tabRow && activeTab) {
+        const left = activeTab.offsetLeft - tabRow.offsetLeft;
+        if (left < tabRow.scrollLeft || left + activeTab.offsetWidth > tabRow.scrollLeft + tabRow.clientWidth) {
+            tabRow.scrollTo({ left: left - 24, behavior: 'smooth' });
+        }
+    }
 }
 
 function updateClanAccessView() {
@@ -1042,6 +1060,7 @@ function updateClanAccessView() {
 }
 
 function applyPermissionView() {
+    renderNnnTab();
     const adminTabs = document.querySelectorAll('.admin-tab');
     const membersTabButton = document.querySelector('.admin-tab[data-tab="members"]');
     const membersList = document.getElementById('adminMembersList');
@@ -1130,7 +1149,8 @@ function normalizeMember(member, index = 0) {
         priority: Number.isFinite(parsedPriority) && parsedPriority > 0 ? parsedPriority : index + 1,
         tabPermissions: sanitizeTabPermissions(member?.tabPermissions),
         initials: safeName.slice(0, 2).toUpperCase(),
-        socials
+        socials,
+        nnnLog: sanitizeNnnLog(member?.nnnLog)
     };
 }
 
@@ -1730,8 +1750,11 @@ async function syncAllMembersToFirestore() {
     });
 
     clanMembers.forEach(member => {
+        // Check-ins are written by each member directly; never push another member's stale copy
+        const { nnnLog, ...memberData } = member;
         batch.set(membersCollection.doc(member.id), {
-            ...member,
+            ...memberData,
+            ...(member.id === authState.memberId ? { nnnLog } : {}),
             updatedAt: getServerTimestamp()
         }, { merge: true });
     });
@@ -1801,12 +1824,14 @@ function refreshAppUI() {
     loadProjects();
     renderMembersOverview();
     renderEventsOverview();
+    renderNnnTab();
     renderInternalContent();
     renderDiscordArchiveTab();
     renderContactContent();
     updateStatsDisplay();
     loadAdminProjects();
     loadAdminEvents();
+    loadAdminNnn();
     loadAdminMembers();
     loadAdminSocials();
     loadAdminStats();
@@ -2004,9 +2029,15 @@ function showToast(message, type = 'info', duration = 3000) {
     `;
     
     container.appendChild(toast);
+    // Force a style flush so the entry transition starts from the hidden state
+    toast.getBoundingClientRect();
+    toast.classList.add('show');
     
     setTimeout(() => {
-        toast.remove();
+        toast.classList.remove('show');
+        toast.addEventListener('transitionend', () => toast.remove(), { once: true });
+        // Fallback in case transitionend never fires (e.g. tab in background)
+        setTimeout(() => toast.remove(), 400);
     }, duration);
 }
 
@@ -2104,9 +2135,9 @@ function toggleMobileMenu() {
 function updateScrollProgress() {
     const scrollTop = window.scrollY;
     const docHeight = document.documentElement.scrollHeight - window.innerHeight;
-    const progress = (scrollTop / docHeight) * 100;
+    const progress = docHeight > 0 ? Math.min(scrollTop / docHeight, 1) : 0;
     
-    document.getElementById('scrollProgress').style.width = `${progress}%`;
+    document.getElementById('scrollProgress').style.transform = `scaleX(${progress})`;
 }
 
 function handleBackToTop() {
@@ -2495,12 +2526,24 @@ function deselectAllProjects() {
 }
 
 function updateAdminProjectSelection() {
+    // Drop ids of projects that no longer exist
+    selectedProjects = selectedProjects.filter(id => projects.some(project => project.id === id));
+
     document.querySelectorAll('.admin-project-item').forEach(item => {
         const checkbox = item.querySelector('.project-select');
         if (checkbox) {
             const projectId = parseInt(checkbox.value);
             checkbox.checked = selectedProjects.includes(projectId);
+            item.classList.toggle('selected', checkbox.checked);
         }
+    });
+
+    const count = selectedProjects.length;
+    [['bulkDeleteButton', 'Ausgewählte löschen'], ['bulkDuplicateButton', 'Ausgewählte duplizieren']].forEach(([id, label]) => {
+        const button = document.getElementById(id);
+        if (!button) return;
+        button.disabled = count === 0;
+        button.querySelector('.bulk-label').textContent = count ? `${label} (${count})` : label;
     });
 }
 
@@ -2590,33 +2633,12 @@ function openAdminModal() {
     }
 
     document.getElementById('adminModal').style.display = 'block';
-    setAuthLightState(false);
     updateAuthInterface();
+    window.setTimeout(() => document.getElementById('googleLoginButton')?.focus(), 50);
 }
 
 function closeAdminModal() {
     document.getElementById('adminModal').style.display = 'none';
-    setAuthLightState(false);
-}
-
-function setAuthLightState(isEnabled) {
-    const modalContent = document.querySelector('#adminModal .auth-modal-content');
-    const switchButton = document.getElementById('authLightSwitch');
-    const switchLabel = document.getElementById('authLightSwitchLabel');
-    const loginButton = document.getElementById('googleLoginButton');
-
-    if (!modalContent || !switchButton || !switchLabel) {
-        return;
-    }
-
-    const enabled = Boolean(isEnabled);
-    modalContent.classList.toggle('is-lit', enabled);
-    switchButton.setAttribute('aria-pressed', String(enabled));
-    switchLabel.textContent = enabled ? 'Licht ist an' : 'Licht einschalten';
-
-    if (enabled) {
-        window.setTimeout(() => loginButton?.focus(), 220);
-    }
 }
 
 function initFirebaseAuth() {
@@ -2721,6 +2743,7 @@ function openAdminPanel() {
     resetSocialForm();
     loadAdminProjects();
     loadAdminEvents();
+    loadAdminNnn();
     loadAdminMembers();
     loadAdminSocials();
     loadAdminStats();
@@ -2797,6 +2820,8 @@ function loadAdminProjects() {
         `;
         list.appendChild(item);
     });
+
+    updateAdminProjectSelection();
 }
 
 function resetMemberForm() {
@@ -3233,7 +3258,8 @@ async function handleMemberSave(e) {
             ? (Number.isFinite(priorityInput) && priorityInput > 0 ? priorityInput : getSortedClanMembers().length + 1)
             : currentMember?.priority,
         tabPermissions,
-        socials
+        socials,
+        nnnLog: clanMembers.find(member => member.id === memberId)?.nnnLog
     }, clanMembers.length);
 
     const existingIndex = clanMembers.findIndex(member => member.id === normalizedMember.id);
@@ -3270,6 +3296,7 @@ function toggleProjectSelection(projectId) {
     } else {
         selectedProjects.push(projectId);
     }
+    updateAdminProjectSelection();
 }
 
 function duplicateProject(projectId) {
@@ -4728,6 +4755,10 @@ function switchClanTab(tabId) {
         tabId = 'startseite';
     }
 
+    if (tabId === 'nnn' && !getNnnSettings().enabled) {
+        tabId = 'startseite';
+    }
+
     document.querySelectorAll('.tab-btn').forEach(button => {
         button.classList.toggle('active', button.dataset.tab === tabId);
     });
@@ -4760,6 +4791,7 @@ function handleAdminTabs(e) {
 
         const tabId = e.target.dataset.tab;
         activateAdminTab(tabId);
+        document.getElementById('adminPanel').scrollTop = 0;
         
         resetSessionTimeout();
     }
@@ -4870,6 +4902,501 @@ function closeLegalModal() {
 }
 
 // ========================================
+// NO NUT NOVEMBER
+// ========================================
+
+// A day entry is 'clean' or the number of times someone gooned that day
+const NNN_MAX_COUNT = 20;
+let selectedNnnDay = null;
+
+function normalizeNnnEntry(value) {
+    if (value === 'clean') return 'clean';
+    // Older check-ins stored 'failed' without a count
+    if (value === 'failed') return 1;
+    const count = Number.parseInt(value, 10);
+    return Number.isFinite(count) && count > 0 ? Math.min(count, NNN_MAX_COUNT) : null;
+}
+
+function isNnnFailed(entry) {
+    return typeof entry === 'number' && entry > 0;
+}
+
+function sanitizeNnnLog(log) {
+    if (!log || typeof log !== 'object') {
+        return {};
+    }
+
+    return Object.fromEntries(
+        Object.entries(log)
+            .filter(([dateKey]) => /^\d{4}-\d{2}-\d{2}$/.test(dateKey))
+            .map(([dateKey, value]) => [dateKey, normalizeNnnEntry(value)])
+            .filter(([, entry]) => entry !== null)
+    );
+}
+
+function toDateKey(date) {
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
+function parseDateKey(dateKey) {
+    const [year, month, day] = dateKey.split('-').map(Number);
+    return new Date(year, month - 1, day);
+}
+
+function formatNnnDate(dateKey, options = { day: 'numeric', month: 'long' }) {
+    return parseDateKey(dateKey).toLocaleDateString('de-DE', options);
+}
+
+function getDefaultNnnSettings() {
+    const now = new Date();
+    // In December the next November is next year's
+    const year = now.getMonth() === 11 ? now.getFullYear() + 1 : now.getFullYear();
+    return {
+        enabled: false,
+        title: 'No Nut November',
+        startDate: `${year}-11-01`,
+        days: 30,
+        participantIds: []
+    };
+}
+
+function getNnnSettings() {
+    const defaults = getDefaultNnnSettings();
+    const stored = settings.nnn || {};
+    const days = Number.parseInt(stored.days, 10);
+
+    return {
+        enabled: stored.enabled === true,
+        title: (stored.title || '').trim() || defaults.title,
+        startDate: /^\d{4}-\d{2}-\d{2}$/.test(stored.startDate || '') ? stored.startDate : defaults.startDate,
+        days: Number.isFinite(days) && days > 0 && days <= 60 ? days : defaults.days,
+        participantIds: Array.isArray(stored.participantIds)
+            ? stored.participantIds.filter(memberId => clanMembers.some(member => member.id === memberId))
+            : []
+    };
+}
+
+function getNnnDayKeys(config) {
+    const start = parseDateKey(config.startDate);
+    return Array.from({ length: config.days }, (_, index) => (
+        toDateKey(new Date(start.getFullYear(), start.getMonth(), start.getDate() + index))
+    ));
+}
+
+function getNnnPhase(dayKeys, todayKey) {
+    if (todayKey < dayKeys[0]) return 'upcoming';
+    if (todayKey > dayKeys[dayKeys.length - 1]) return 'finished';
+    return 'running';
+}
+
+function isNnnParticipant(memberId = authState.memberId) {
+    return Boolean(memberId) && getNnnSettings().participantIds.includes(memberId);
+}
+
+function canSeeNnn() {
+    const config = getNnnSettings();
+    if (!config.enabled) return false;
+    return authState.role === 'admin' || (authState.role === 'member' && isNnnParticipant());
+}
+
+function getNnnMemberStats(member, dayKeys, todayKey) {
+    const log = member?.nnnLog || {};
+    const pastKeys = dayKeys.filter(dateKey => dateKey <= todayKey);
+    let clean = 0;
+    let failedDays = 0;
+    let goonTotal = 0;
+    let firstFail = null;
+    let best = 0;
+    let run = 0;
+
+    pastKeys.forEach(dateKey => {
+        const entry = normalizeNnnEntry(log[dateKey]);
+        if (entry === 'clean') {
+            clean++;
+            run++;
+            best = Math.max(best, run);
+        } else {
+            run = 0;
+            if (isNnnFailed(entry)) {
+                failedDays++;
+                goonTotal += entry;
+                firstFail = firstFail || dateKey;
+            }
+        }
+    });
+
+    // Not answering today yet does not break the streak
+    let index = pastKeys.length - 1;
+    if (index >= 0 && pastKeys[index] === todayKey && !log[todayKey]) {
+        index--;
+    }
+
+    let streak = 0;
+    for (; index >= 0 && log[pastKeys[index]] === 'clean'; index--) {
+        streak++;
+    }
+
+    return { clean, failedDays, goonTotal, firstFail, best, streak };
+}
+
+function renderNnnTab() {
+    const section = document.getElementById('nnn');
+    if (!section) return;
+
+    // The tab is public while the event runs; details need a participant login
+    const visible = getNnnSettings().enabled;
+    document.querySelectorAll('.tab-btn[data-tab="nnn"], [data-tab-target="nnn"]').forEach(element => {
+        element.classList.toggle('hidden', !visible);
+    });
+
+    if (!visible) {
+        if (section.classList.contains('active')) {
+            switchClanTab('startseite');
+        }
+        return;
+    }
+
+    const config = getNnnSettings();
+    const dayKeys = getNnnDayKeys(config);
+    const todayKey = toDateKey(new Date());
+    const phase = getNnnPhase(dayKeys, todayKey);
+    const dayNumber = dayKeys.indexOf(todayKey) + 1;
+    const daysUntilStart = Math.round((parseDateKey(dayKeys[0]) - parseDateKey(todayKey)) / 86400000);
+    const rangeLabel = `${formatNnnDate(dayKeys[0])} – ${formatNnnDate(dayKeys[dayKeys.length - 1])}`;
+
+    document.getElementById('nnnTitle').textContent = config.title;
+    document.getElementById('nnnSubtitle').textContent = `${rangeLabel} · ${config.participantIds.length} Teilnehmer · Ehrlich eintragen, sonst zählt es nicht.`;
+
+    const phasePill = document.getElementById('nnnPhase');
+    const phaseLabels = {
+        upcoming: [`Startet in ${daysUntilStart} ${daysUntilStart === 1 ? 'Tag' : 'Tagen'}`, 'info'],
+        running: [`Tag ${dayNumber} von ${config.days}`, 'success'],
+        finished: ['Vorbei', 'warning']
+    };
+    phasePill.textContent = phaseLabels[phase][0];
+    phasePill.className = `status-pill ${phaseLabels[phase][1]}`;
+
+    const hasAccess = canSeeNnn();
+    document.getElementById('nnnLeaderboardCard').classList.toggle('hidden', !hasAccess);
+
+    if (!hasAccess) {
+        renderNnnLocked(phaseLabels[phase]);
+        return;
+    }
+
+    renderNnnPersonal(dayKeys, todayKey, phase);
+    renderNnnLeaderboard(config, dayKeys, todayKey);
+}
+
+function renderNnnLocked([phaseText, phaseType]) {
+    const isGuest = authState.role === 'guest';
+    document.getElementById('nnnPersonal').innerHTML = `
+        <div class="nnn-card nnn-locked">
+            <span class="status-pill ${phaseType}">${phaseText}</span>
+            <i class="fas ${isGuest ? 'fa-lock' : 'fa-user-lock'} nnn-locked-icon"></i>
+            <h3>${isGuest ? 'Anmelden, um alles zu sehen' : 'Du bist nicht eingetragen'}</h3>
+            <p>${isGuest
+                ? 'Streaks, Kalender und Rangliste sehen nur eingeloggte Teilnehmer.'
+                : 'Dieses Event ist nur für ausgewählte Mitglieder. Frag einen Admin, wenn du mitmachen willst.'}</p>
+            ${isGuest ? `
+                <button type="button" class="btn btn-primary" data-nnn-login>
+                    <i class="fab fa-google"></i> Anmelden
+                </button>
+            ` : ''}
+        </div>
+    `;
+}
+
+function getNnnCheckinMarkup(dateKey, dayNumber, entry, isToday) {
+    const failed = isNnnFailed(entry);
+    const question = isToday
+        ? `Tag ${dayNumber} – hast du heute gegoont?`
+        : `Tag ${dayNumber} (${formatNnnDate(dateKey, { weekday: 'short', day: 'numeric', month: 'short' })}) – nachtragen`;
+
+    return `
+        <p class="nnn-question">${question}</p>
+        <div class="nnn-choices" role="group" aria-label="Check-in">
+            <button type="button" class="btn nnn-choice nnn-choice-clean ${entry === 'clean' ? 'is-selected' : ''}"
+                data-nnn-date="${dateKey}" data-nnn-status="clean" aria-pressed="${entry === 'clean'}">
+                <i class="fas fa-shield-halved"></i> Clean geblieben
+            </button>
+            <button type="button" class="btn nnn-choice nnn-choice-failed ${failed ? 'is-selected' : ''}"
+                data-nnn-date="${dateKey}" data-nnn-status="failed" aria-pressed="${failed}">
+                <i class="fas fa-skull"></i> Gegoont
+            </button>
+        </div>
+        ${failed ? `
+            <div class="nnn-count">
+                <span class="nnn-count-label">Wie oft?</span>
+                <div class="nnn-stepper">
+                    <button type="button" class="nnn-step" data-nnn-date="${dateKey}" data-nnn-step="-1"
+                        aria-label="Einmal weniger" ${entry <= 1 ? 'disabled' : ''}><i class="fas fa-minus"></i></button>
+                    <span class="nnn-count-value" aria-live="polite">${entry}×</span>
+                    <button type="button" class="nnn-step" data-nnn-date="${dateKey}" data-nnn-step="1"
+                        aria-label="Einmal mehr" ${entry >= NNN_MAX_COUNT ? 'disabled' : ''}><i class="fas fa-plus"></i></button>
+                </div>
+            </div>
+        ` : ''}
+        ${entry && !isToday ? `<button type="button" class="nnn-clear" data-nnn-date="${dateKey}" data-nnn-clear>Eintrag löschen</button>` : ''}
+    `;
+}
+
+function renderNnnPersonal(dayKeys, todayKey, phase) {
+    const container = document.getElementById('nnnPersonal');
+    const member = clanMembers.find(entry => entry.id === authState.memberId);
+
+    if (!member || !isNnnParticipant(member.id)) {
+        container.innerHTML = authState.role === 'admin'
+            ? '<p class="nnn-note">Du bist selbst nicht als Teilnehmer eingetragen – du siehst nur die Rangliste.</p>'
+            : '';
+        return;
+    }
+
+    const stats = getNnnMemberStats(member, dayKeys, todayKey);
+    const log = member.nnnLog || {};
+    const pastKeys = dayKeys.filter(dateKey => dateKey <= todayKey);
+
+    // Default to today (or the last day once it is over)
+    if (!pastKeys.includes(selectedNnnDay)) {
+        selectedNnnDay = pastKeys[pastKeys.length - 1] || null;
+    }
+
+    const checkin = phase === 'upcoming' || !selectedNnnDay
+        ? `<p class="nnn-question">Startet am ${formatNnnDate(dayKeys[0])}. Bis dahin: Kräfte sammeln.</p>`
+        : getNnnCheckinMarkup(selectedNnnDay, dayKeys.indexOf(selectedNnnDay) + 1, log[selectedNnnDay], selectedNnnDay === todayKey);
+
+    const calendar = dayKeys.map((dateKey, index) => {
+        const entry = log[dateKey];
+        const failed = isNnnFailed(entry);
+        const isFuture = dateKey > todayKey;
+        const state = entry === 'clean' ? 'clean' : failed ? `${entry}× gegoont` : 'offen';
+        const label = `${formatNnnDate(dateKey, { weekday: 'short', day: 'numeric', month: 'short' })}: ${state}`;
+        return `
+            <button type="button"
+                class="nnn-day ${entry === 'clean' ? 'is-clean' : ''} ${failed ? 'is-failed' : ''} ${dateKey === todayKey ? 'is-today' : ''} ${dateKey === selectedNnnDay ? 'is-selected' : ''}"
+                data-nnn-select="${dateKey}" title="${label}" aria-label="${label}" aria-pressed="${dateKey === selectedNnnDay}" ${isFuture ? 'disabled' : ''}>
+                ${index + 1}
+                ${failed && entry > 1 ? `<span class="nnn-day-count">${entry}</span>` : ''}
+            </button>
+        `;
+    }).join('');
+
+    container.innerHTML = `
+        <div class="nnn-card nnn-personal">
+            <div class="nnn-streak ${stats.streak > 0 ? 'is-burning' : ''}">
+                <i class="fas fa-fire"></i>
+                <span class="nnn-streak-value">${stats.streak}</span>
+                <span class="nnn-streak-label">${stats.streak === 1 ? 'Tag' : 'Tage'} Streak</span>
+            </div>
+            <div class="nnn-checkin">
+                ${checkin}
+                <div class="nnn-mini-stats">
+                    <span><strong>${stats.best}</strong> beste Streak</span>
+                    <span><strong>${stats.clean}</strong> clean</span>
+                    <span><strong>${stats.goonTotal}×</strong> gegoont</span>
+                </div>
+            </div>
+        </div>
+        <div class="nnn-card">
+            <div class="nnn-card-header">
+                <h3>Dein Kalender</h3>
+                <span class="nnn-legend">Tag antippen zum Nachtragen</span>
+            </div>
+            <div class="nnn-calendar">${calendar}</div>
+        </div>
+    `;
+}
+
+function renderNnnLeaderboard(config, dayKeys, todayKey) {
+    const list = document.getElementById('nnnLeaderboard');
+    const rows = config.participantIds
+        .map(memberId => clanMembers.find(member => member.id === memberId))
+        .filter(Boolean)
+        .map(member => ({ member, stats: getNnnMemberStats(member, dayKeys, todayKey) }))
+        .sort((a, b) => (
+            (a.stats.failedDays > 0) - (b.stats.failedDays > 0) ||
+            b.stats.streak - a.stats.streak ||
+            b.stats.clean - a.stats.clean ||
+            a.stats.goonTotal - b.stats.goonTotal ||
+            a.member.name.localeCompare(b.member.name)
+        ));
+
+    if (!rows.length) {
+        list.innerHTML = '<li class="nnn-note">Noch keine Teilnehmer ausgewählt.</li>';
+        return;
+    }
+
+    list.innerHTML = rows.map(({ member, stats }, index) => {
+        const status = stats.failedDays
+            ? `<span class="status-pill error">Raus seit ${formatNnnDate(stats.firstFail, { day: 'numeric', month: 'numeric' })} · ${stats.goonTotal}×</span>`
+            : '<span class="status-pill success">Noch dabei</span>';
+        return `
+            <li class="nnn-row ${member.id === authState.memberId ? 'is-me' : ''}">
+                <span class="nnn-rank">${index + 1}</span>
+                <span class="project-owner-avatar-wrap">${getMemberAvatarMarkup(member, 'project-owner-avatar')}</span>
+                <span class="nnn-row-name">${sanitizeInput(member.name)}</span>
+                <span class="nnn-row-streak ${stats.streak > 0 ? 'is-burning' : ''}" title="Aktuelle Streak"><i class="fas fa-fire"></i> ${stats.streak}</span>
+                ${status}
+            </li>
+        `;
+    }).join('');
+}
+
+async function saveNnnStatusToFirestore(memberId, dateKey, entry) {
+    if (!firebaseDb) {
+        return true;
+    }
+
+    const deleteValue = window.firebase?.firestore?.FieldValue?.delete?.();
+    try {
+        await firebaseDb.collection(FIRESTORE_MEMBERS_COLLECTION).doc(memberId).set({
+            nnnLog: { [dateKey]: entry ?? deleteValue ?? null },
+            updatedAt: getServerTimestamp()
+        }, { merge: true });
+        return true;
+    } catch (error) {
+        console.error('Error saving NNN check-in:', error);
+        return false;
+    }
+}
+
+let nnnSaveTimers = {};
+
+async function setNnnEntry(dateKey, entry, { announce = false } = {}) {
+    const member = clanMembers.find(item => item.id === authState.memberId);
+    if (!member || !isNnnParticipant(member.id)) return;
+
+    const config = getNnnSettings();
+    const todayKey = toDateKey(new Date());
+    if (!getNnnDayKeys(config).includes(dateKey) || dateKey > todayKey) return;
+
+    const normalized = entry === null ? null : normalizeNnnEntry(entry);
+    member.nnnLog = { ...(member.nnnLog || {}) };
+    if (normalized === null) {
+        delete member.nnnLog[dateKey];
+    } else {
+        member.nnnLog[dateKey] = normalized;
+    }
+
+    persistLocalData();
+    renderNnnTab();
+
+    if (announce && dateKey === todayKey) {
+        const streak = getNnnMemberStats(member, getNnnDayKeys(config), todayKey).streak;
+        showToast(
+            normalized === 'clean' ? `Stark. ${streak} ${streak === 1 ? 'Tag' : 'Tage'} Streak` : 'Ehrlich bleibt ehrlich. Streak ist weg.',
+            normalized === 'clean' ? 'success' : 'info'
+        );
+    }
+
+    // Rapid +/- taps only send the final count
+    clearTimeout(nnnSaveTimers[dateKey]);
+    nnnSaveTimers[dateKey] = setTimeout(async () => {
+        if (!await saveNnnStatusToFirestore(member.id, dateKey, member.nnnLog[dateKey] ?? null)) {
+            showToast('Check-in nur lokal gespeichert – Firestore hat abgelehnt', 'warning');
+        }
+    }, 400);
+}
+
+function handleNnnClick(event) {
+    if (event.target.closest('[data-nnn-login]')) {
+        openAdminModal();
+        return;
+    }
+
+    const member = clanMembers.find(item => item.id === authState.memberId);
+    const getEntry = dateKey => member?.nnnLog?.[dateKey];
+
+    const day = event.target.closest('[data-nnn-select]');
+    if (day && !day.disabled) {
+        selectedNnnDay = day.dataset.nnnSelect;
+        renderNnnTab();
+        return;
+    }
+
+    const choice = event.target.closest('[data-nnn-status]');
+    if (choice) {
+        const { nnnDate, nnnStatus } = choice.dataset;
+        const current = getEntry(nnnDate);
+        if (nnnStatus === 'clean' && current !== 'clean') {
+            setNnnEntry(nnnDate, 'clean', { announce: true });
+        } else if (nnnStatus === 'failed' && !isNnnFailed(current)) {
+            setNnnEntry(nnnDate, 1, { announce: true });
+        }
+        return;
+    }
+
+    const step = event.target.closest('[data-nnn-step]');
+    if (step && !step.disabled) {
+        const current = getEntry(step.dataset.nnnDate);
+        if (isNnnFailed(current)) {
+            setNnnEntry(step.dataset.nnnDate, Math.max(1, Math.min(NNN_MAX_COUNT, current + Number(step.dataset.nnnStep))));
+        }
+        return;
+    }
+
+    const clear = event.target.closest('[data-nnn-clear]');
+    if (clear) {
+        setNnnEntry(clear.dataset.nnnDate, null);
+    }
+}
+
+function loadAdminNnn() {
+    const form = document.getElementById('nnnSettingsForm');
+    if (!form) return;
+
+    const config = getNnnSettings();
+    const participants = new Set(config.participantIds);
+
+    document.getElementById('nnnEnabled').checked = config.enabled;
+    document.getElementById('nnnTitleInput').value = config.title;
+    document.getElementById('nnnStartDate').value = config.startDate;
+    document.getElementById('nnnDays').value = config.days;
+    document.getElementById('nnnParticipants').innerHTML = getSortedClanMembers().map(member => `
+        <label class="member-tab-permission-option">
+            <input type="checkbox" class="nnn-participant-checkbox" value="${member.id}" ${participants.has(member.id) ? 'checked' : ''}>
+            <span>${sanitizeInput(member.name)}${member.email ? '' : ' <small class="nnn-missing-email">(keine E-Mail)</small>'}</span>
+        </label>
+    `).join('');
+}
+
+async function handleNnnSettingsSave(e) {
+    e.preventDefault();
+
+    if (!requireAdminAccess()) {
+        return;
+    }
+
+    const startDate = document.getElementById('nnnStartDate').value;
+    const days = Number.parseInt(document.getElementById('nnnDays').value, 10);
+
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(startDate) || !Number.isFinite(days) || days < 1 || days > 60) {
+        showToast('Bitte Startdatum und eine Dauer von 1–60 Tagen angeben', 'error');
+        return;
+    }
+
+    settings.nnn = {
+        enabled: document.getElementById('nnnEnabled').checked,
+        title: document.getElementById('nnnTitleInput').value.trim() || 'No Nut November',
+        startDate,
+        days,
+        participantIds: Array.from(document.querySelectorAll('.nnn-participant-checkbox:checked')).map(input => input.value)
+    };
+
+    const saveResult = await saveData();
+    renderNnnTab();
+    loadAdminNnn();
+    logActivity('nnn_update', `NNN ${settings.nnn.enabled ? 'aktiviert' : 'deaktiviert'} (${settings.nnn.participantIds.length} Teilnehmer)`);
+
+    if (saveResult?.success === false) {
+        showToast('NNN lokal gespeichert, aber Firestore konnte nicht aktualisiert werden', 'warning');
+        return;
+    }
+
+    showToast(settings.nnn.enabled ? 'NNN ist aktiv' : 'NNN gespeichert (inaktiv)', 'success');
+}
+
+// ========================================
 // PARTICLE ANIMATION
 // ========================================
 
@@ -4878,51 +5405,72 @@ function initParticles() {
     if (!canvas) return;
     
     const ctx = canvas.getContext('2d');
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const PARTICLE_COLOR = '220, 40, 70';
     let particles = [];
+    let width = 0;
+    let height = 0;
+    let rafId = null;
+    let lastTime = 0;
+    let isOnScreen = true;
     
     function resizeCanvas() {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
+        // Render at device pixel ratio so particles stay sharp on retina screens
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        width = canvas.clientWidth || window.innerWidth;
+        height = canvas.clientHeight || window.innerHeight;
+        canvas.width = Math.round(width * dpr);
+        canvas.height = Math.round(height * dpr);
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     }
     
     function createParticle() {
         return {
-            x: Math.random() * canvas.width,
-            y: Math.random() * canvas.height,
-            size: Math.random() * 3 + 1,
-            speedX: Math.random() * 1 - 0.5,
-            speedY: Math.random() * 1 - 0.5,
-            opacity: Math.random() * 0.5 + 0.2
+            x: Math.random() * width,
+            y: Math.random() * height,
+            size: Math.random() * 2.5 + 0.8,
+            speedX: Math.random() * 0.6 - 0.3,
+            speedY: Math.random() * 0.6 - 0.3,
+            opacity: Math.random() * 0.4 + 0.15
         };
     }
     
     function init() {
         particles = [];
-        for (let i = 0; i < 50; i++) {
+        const count = width < 700 ? 28 : 50;
+        for (let i = 0; i < count; i++) {
             particles.push(createParticle());
         }
     }
     
-    function animate() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+    function step(delta) {
+        // Normalise to 60fps so speed is the same on 120Hz displays
+        const factor = delta / 16.67;
+        particles.forEach(particle => {
+            particle.x += particle.speedX * factor;
+            particle.y += particle.speedY * factor;
+            
+            if (particle.x < 0) particle.x = width;
+            if (particle.x > width) particle.x = 0;
+            if (particle.y < 0) particle.y = height;
+            if (particle.y > height) particle.y = 0;
+        });
+    }
+    
+    function draw() {
+        ctx.clearRect(0, 0, width, height);
         
         particles.forEach(particle => {
-            particle.x += particle.speedX;
-            particle.y += particle.speedY;
-            
-            if (particle.x < 0) particle.x = canvas.width;
-            if (particle.x > canvas.width) particle.x = 0;
-            if (particle.y < 0) particle.y = canvas.height;
-            if (particle.y > canvas.height) particle.y = 0;
-            
             ctx.beginPath();
             ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
-            ctx.fillStyle = `rgba(99, 102, 241, ${particle.opacity})`;
+            ctx.fillStyle = `rgba(${PARTICLE_COLOR}, ${particle.opacity})`;
             ctx.fill();
         });
         
-        particles.forEach((p1, i) => {
-            particles.slice(i + 1).forEach(p2 => {
+        for (let i = 0; i < particles.length; i++) {
+            const p1 = particles[i];
+            for (let k = i + 1; k < particles.length; k++) {
+                const p2 = particles[k];
                 const dx = p1.x - p2.x;
                 const dy = p1.y - p2.y;
                 const distance = Math.sqrt(dx * dx + dy * dy);
@@ -4931,22 +5479,63 @@ function initParticles() {
                     ctx.beginPath();
                     ctx.moveTo(p1.x, p1.y);
                     ctx.lineTo(p2.x, p2.y);
-                    ctx.strokeStyle = `rgba(99, 102, 241, ${0.1 * (1 - distance / 150)})`;
+                    ctx.strokeStyle = `rgba(${PARTICLE_COLOR}, ${0.08 * (1 - distance / 150)})`;
                     ctx.stroke();
                 }
-            });
-        });
-        
-        requestAnimationFrame(animate);
+            }
+        }
+    }
+    
+    function loop(time) {
+        const delta = lastTime ? Math.min(time - lastTime, 50) : 16.67;
+        lastTime = time;
+        step(delta);
+        draw();
+        rafId = requestAnimationFrame(loop);
+    }
+    
+    function start() {
+        if (rafId || reduceMotion.matches || !isOnScreen || document.hidden) return;
+        lastTime = 0;
+        rafId = requestAnimationFrame(loop);
+    }
+    
+    function stop() {
+        if (rafId) cancelAnimationFrame(rafId);
+        rafId = null;
     }
     
     resizeCanvas();
     init();
-    animate();
+    draw();
+    start();
     
+    // Only spend frames while the hero is visible and the tab is in front
+    if ('IntersectionObserver' in window) {
+        new IntersectionObserver(entries => {
+            isOnScreen = entries[0].isIntersecting;
+            isOnScreen ? start() : stop();
+        }).observe(canvas);
+    }
+    
+    document.addEventListener('visibilitychange', () => {
+        document.hidden ? stop() : start();
+    });
+    
+    reduceMotion.addEventListener?.('change', () => {
+        stop();
+        draw();
+        start();
+    });
+    
+    let resizeTimer = null;
     window.addEventListener('resize', () => {
-        resizeCanvas();
-        init();
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(() => {
+            resizeCanvas();
+            init();
+            draw();
+        }, 150);
     });
 }
 
@@ -5183,10 +5772,6 @@ document.querySelector('.footer')?.addEventListener('click', handleClanTabClick)
 // Admin login
 document.getElementById('googleLoginButton')?.addEventListener('click', signInWithGoogle);
 document.getElementById('authSignOutButton')?.addEventListener('click', signOutGoogle);
-document.getElementById('authLightSwitch')?.addEventListener('click', () => {
-    const isCurrentlyEnabled = document.querySelector('#adminModal .auth-modal-content')?.classList.contains('is-lit');
-    setAuthLightState(!isCurrentlyEnabled);
-});
 
 // Admin forms
 document.getElementById('addProjectForm').addEventListener('submit', handleAddProject);
@@ -5200,6 +5785,12 @@ document.getElementById('memberForm')?.addEventListener('submit', handleMemberSa
 document.getElementById('socialDefinitionForm')?.addEventListener('submit', handleSocialDefinitionSave);
 document.getElementById('internalContentForm')?.addEventListener('submit', handleInternalContentSave);
 document.getElementById('eventForm')?.addEventListener('submit', handleEventSave);
+document.getElementById('nnnSettingsForm')?.addEventListener('submit', handleNnnSettingsSave);
+document.getElementById('nnn')?.addEventListener('click', handleNnnClick);
+// Day changes while the tab sits in the background
+document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) renderNnnTab();
+});
 
 document.addEventListener('change', (e) => {
     if (e.target.matches('#projectPlatform, #editProjectPlatform, .additional-platform-select')) {

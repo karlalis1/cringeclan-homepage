@@ -23,7 +23,7 @@
     
     <!-- PWA Manifest -->
     <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#6366f1">
+    <meta name="theme-color" content="#111216">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     
@@ -85,6 +85,7 @@
             <li><a href="#" data-tab-target="startseite">Startseite</a></li>
             <li><a href="#" data-tab-target="projekte">Projekte</a></li>
             <li><a href="#" data-tab-target="ereignisse">Ereignisse</a></li>
+            <li><a href="#" data-tab-target="nnn" class="hidden">NNN</a></li>
             <li><a href="#" data-tab-target="intern" data-clan-auth="true" class="hidden">Intern</a></li>
             <li><a href="#" data-tab-target="discord-archiv" data-clan-auth="true" class="hidden">Discord Archiv</a></li>
             <li><a href="#" data-tab-target="kontakt">Kontakt</a></li>
@@ -110,6 +111,7 @@
         <button class="tab-btn active" data-tab="startseite">Startseite</button>
         <button class="tab-btn" data-tab="projekte">Projekte</button>
         <button class="tab-btn" data-tab="ereignisse">Ereignisse</button>
+        <button class="tab-btn hidden" data-tab="nnn">NNN</button>
         <button class="tab-btn hidden" data-tab="intern" data-clan-auth="true">Intern</button>
         <button class="tab-btn hidden" data-tab="discord-archiv" data-clan-auth="true">Discord Archiv</button>
         <button class="tab-btn" data-tab="kontakt">Kontakt</button>
@@ -227,6 +229,23 @@
                 <div class="empty-state" id="eventsEmptyState" style="display: none;">
                     <i class="fas fa-calendar-xmark"></i>
                     <p>Aktuell sind keine zukünftigen Ereignisse eingetragen.</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="nnn" class="tab-content">
+            <div class="container">
+                <div class="section-intro">
+                    <h2 class="section-title" id="nnnTitle">No Nut November</h2>
+                    <p class="section-subtitle" id="nnnSubtitle">Nur für ausgewählte Mitglieder sichtbar.</p>
+                </div>
+                <div id="nnnPersonal"></div>
+                <div class="nnn-card" id="nnnLeaderboardCard">
+                    <div class="nnn-card-header">
+                        <h3>Rangliste</h3>
+                        <span id="nnnPhase" class="status-pill info"></span>
+                    </div>
+                    <ol id="nnnLeaderboard" class="nnn-leaderboard"></ol>
                 </div>
             </div>
         </section>
@@ -377,17 +396,7 @@
     <div class="modal" id="adminModal" role="dialog" aria-modal="true" aria-labelledby="adminModalTitle">
         <div class="modal-content auth-modal-content">
             <span class="close" onclick="closeAdminModal()" aria-label="Schließen">&times;</span>
-            <div class="auth-switch-panel">
-                <span class="auth-switch-caption">Lichtschalter</span>
-                <button type="button" class="auth-light-switch" id="authLightSwitch" aria-pressed="false">
-                    <span class="auth-light-switch-track">
-                        <span class="auth-light-switch-knob"></span>
-                    </span>
-                    <span class="auth-light-switch-text" id="authLightSwitchLabel">Licht einschalten</span>
-                </button>
-                <p class="auth-switch-hint">Schalter umlegen, dann erscheint das Login im Licht.</p>
-            </div>
-            <div class="auth-light-focus" id="authLightFocus">
+            <div class="auth-login-panel">
                 <h2 id="adminModalTitle">Login</h2>
                 <div class="auth-login-shell">
                     <p id="authModalIntro" class="auth-login-copy">Melde dich mit Google an. Admins duerfen alles bearbeiten, Mitglieder nur ihr eigenes Profil.</p>
@@ -403,35 +412,42 @@
     <!-- Admin Panel -->
     <div class="admin-panel" id="adminPanel" role="dialog" aria-modal="true" aria-labelledby="adminPanelTitle">
         <div class="admin-header">
-            <h2 id="adminPanelTitle">Admin Panel</h2>
-            <div class="admin-header-actions">
-                <button class="btn btn-secondary hidden" id="authSignOutButton" title="Abmelden">
-                    <i class="fas fa-right-from-bracket"></i> Abmelden
-                </button>
-                <button class="btn btn-secondary" onclick="exportData()" title="Daten exportieren">
-                    <i class="fas fa-download"></i> Export
-                </button>
-                <button class="btn btn-secondary" onclick="document.getElementById('importInput').click()" title="Daten importieren">
-                    <i class="fas fa-upload"></i> Import
-                </button>
-                <input type="file" id="importInput" accept=".json" style="display: none;" onchange="importData(event)">
-                <button class="btn btn-secondary" onclick="closeAdminPanel()" title="Schließen">
-                    <i class="fas fa-times"></i>
-                </button>
+            <div class="admin-header-bar">
+                <div class="admin-header-title">
+                    <h2 id="adminPanelTitle">Admin Panel</h2>
+                    <p class="admin-identity" id="adminIdentity"></p>
+                </div>
+                <div class="admin-header-actions">
+                    <button class="btn btn-secondary hidden" id="authSignOutButton" title="Abmelden">
+                        <i class="fas fa-right-from-bracket"></i> <span class="admin-action-label">Abmelden</span>
+                    </button>
+                    <button class="btn btn-secondary" onclick="exportData()" title="Daten exportieren">
+                        <i class="fas fa-download"></i> <span class="admin-action-label">Export</span>
+                    </button>
+                    <button class="btn btn-secondary" onclick="document.getElementById('importInput').click()" title="Daten importieren">
+                        <i class="fas fa-upload"></i> <span class="admin-action-label">Import</span>
+                    </button>
+                    <input type="file" id="importInput" accept=".json" style="display: none;" onchange="importData(event)">
+                    <button class="btn btn-secondary admin-close" onclick="closeAdminPanel()" title="Schließen (Esc)" aria-label="Admin Panel schließen">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="admin-tabs-wrap">
+                <nav class="admin-tabs" aria-label="Admin-Bereiche">
+                    <button class="admin-tab active" data-tab="projects">Projekte</button>
+                    <button class="admin-tab" data-tab="events" data-admin-only="true">Ereignisse</button>
+                    <button class="admin-tab" data-tab="stats">Statistiken</button>
+                    <button class="admin-tab" data-tab="settings">Einstellungen</button>
+                    <button class="admin-tab" data-tab="members">Mitglieder</button>
+                    <button class="admin-tab" data-tab="socials">Socials</button>
+                    <button class="admin-tab" data-tab="internal" data-admin-only="true">Intern</button>
+                    <button class="admin-tab" data-tab="nnn" data-admin-only="true">NNN</button>
+                    <button class="admin-tab" data-tab="activity">Aktivität</button>
+                </nav>
             </div>
         </div>
         <div class="admin-content">
-            <!-- Admin Tabs -->
-            <div class="admin-tabs">
-                <button class="admin-tab active" data-tab="projects">Projekte</button>
-                <button class="admin-tab" data-tab="events" data-admin-only="true">Ereignisse</button>
-                <button class="admin-tab" data-tab="stats">Statistiken</button>
-                <button class="admin-tab" data-tab="settings">Einstellungen</button>
-                <button class="admin-tab" data-tab="members">Mitglieder</button>
-                <button class="admin-tab" data-tab="socials">Socials</button>
-                <button class="admin-tab" data-tab="internal" data-admin-only="true">Intern</button>
-                <button class="admin-tab" data-tab="activity">Aktivität</button>
-            </div>
 
             <!-- Projects Tab -->
             <div class="admin-tab-content active" id="projectsTab">
@@ -559,11 +575,11 @@
                         <button class="btn btn-secondary" onclick="deselectAllProjects()">
                             <i class="fas fa-times"></i> Auswahl aufheben
                         </button>
-                        <button class="btn btn-danger" onclick="bulkDeleteProjects()">
-                            <i class="fas fa-trash"></i> Ausgewählte löschen
+                        <button class="btn btn-danger" id="bulkDeleteButton" onclick="bulkDeleteProjects()" disabled>
+                            <i class="fas fa-trash"></i> <span class="bulk-label">Ausgewählte löschen</span>
                         </button>
-                        <button class="btn btn-secondary" onclick="bulkDuplicateProjects()">
-                            <i class="fas fa-copy"></i> Ausgewählte duplizieren
+                        <button class="btn btn-secondary" id="bulkDuplicateButton" onclick="bulkDuplicateProjects()" disabled>
+                            <i class="fas fa-copy"></i> <span class="bulk-label">Ausgewählte duplizieren</span>
                         </button>
                     </div>
                     <div id="adminProjectsList"></div>
@@ -812,15 +828,34 @@
                             </div>
                             <small class="admin-field-hint">Hier kannst du rohe Export-Dateinamen einfügen. Die Importhilfe erkennt automatisch `Kategorie`, `Label` und die HTML-Datei.</small>
                         </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="discordArchiveGithubOwner">GitHub Owner</label>
+                                <input type="text" id="discordArchiveGithubOwner" placeholder="z.B. dannydevcodes-de">
+                            </div>
+                            <div class="form-group">
+                                <label for="discordArchiveGithubRepo">GitHub Repository</label>
+                                <input type="text" id="discordArchiveGithubRepo" placeholder="z.B. CringeClan-Website">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="discordArchiveGithubBranch">GitHub Branch</label>
+                                <input type="text" id="discordArchiveGithubBranch" placeholder="main">
+                            </div>
+                            <div class="form-group">
+                                <label for="discordArchiveGithubPath">GitHub Ordnerpfad</label>
+                                <input type="text" id="discordArchiveGithubPath" placeholder="discord-archive">
+                            </div>
+                        </div>
                         <div class="form-group">
-                            <label for="discordArchiveFolderInput">Ganzen Discord-Archiv-Ordner importieren</label>
-                            <input type="file" id="discordArchiveFolderInput" webkitdirectory directory multiple>
+                            <label>Ganzen GitHub-Archiv-Ordner importieren</label>
                             <div class="bulk-actions discord-archive-actions">
                                 <button type="button" class="btn btn-secondary" id="importDiscordArchiveFolderButton">
-                                    <i class="fas fa-folder-open"></i> Ordner importieren
+                                    <i class="fab fa-github"></i> GitHub-Ordner importieren
                                 </button>
                             </div>
-                            <small class="admin-field-hint">Wähle deinen kompletten Discord-Export-Ordner aus. Die Seite übernimmt automatisch alle `.html`-Chatdateien und ignoriert `assets` und andere Dateien.</small>
+                            <small class="admin-field-hint">Importiert alle `.html`-Chatdateien aus dem angegebenen GitHub-Ordner und hängt sie an die bestehende Liste an, statt alles zu überschreiben.</small>
                         </div>
                         <button type="submit" class="btn btn-primary">
                             <i class="fas fa-save"></i> Einstellungen speichern
@@ -1075,6 +1110,42 @@
                         </div>
                         <button type="submit" class="btn btn-primary">
                             <i class="fas fa-save"></i> Internen Text speichern
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- No Nut November Tab -->
+            <div class="admin-tab-content" id="nnnTab">
+                <div class="admin-section">
+                    <h3>No Nut November</h3>
+                    <form id="nnnSettingsForm">
+                        <label class="nnn-admin-toggle" for="nnnEnabled">
+                            <input type="checkbox" id="nnnEnabled">
+                            <span>Event aktiv</span>
+                            <small>Ausgewählte Mitglieder sehen dann den Reiter „NNN“.</small>
+                        </label>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="nnnTitleInput">Titel</label>
+                                <input type="text" id="nnnTitleInput" maxlength="60" placeholder="No Nut November">
+                            </div>
+                            <div class="form-group">
+                                <label for="nnnStartDate">Start</label>
+                                <input type="date" id="nnnStartDate">
+                            </div>
+                            <div class="form-group">
+                                <label for="nnnDays">Dauer (Tage)</label>
+                                <input type="number" id="nnnDays" min="1" max="60" step="1">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Teilnehmer</label>
+                            <div id="nnnParticipants" class="member-tab-permissions"></div>
+                            <small class="admin-field-hint">Nur diese Mitglieder sehen den Reiter und können einchecken. Sie brauchen eine hinterlegte Google-E-Mail.</small>
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> NNN speichern
                         </button>
                     </form>
                 </div>
