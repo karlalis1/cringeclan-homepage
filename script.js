@@ -1977,6 +1977,10 @@ function shouldNotifyDiscord(action) {
 function applyTheme(theme) {
     document.documentElement.setAttribute('data-theme', theme);
     settings.theme = theme;
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', {
+        light: '#f6ecef',
+        'high-contrast': '#000000'
+    }[theme] || '#111216');
     
     const themeIcon = document.querySelector('#themeToggle i');
     if (theme === 'dark') {
@@ -2123,9 +2127,60 @@ function getPasswordStrengthLabel(strength) {
 // MOBILE MENU
 // ========================================
 
-function toggleMobileMenu() {
+function setMobileMenuOpen(open) {
     const mobileMenu = document.getElementById('mobileMenu');
-    mobileMenu.classList.toggle('active');
+    const toggle = document.getElementById('mobileMenuToggle');
+    if (!mobileMenu || !toggle) return;
+
+    mobileMenu.classList.toggle('active', open);
+    toggle.setAttribute('aria-expanded', String(open));
+    toggle.setAttribute('aria-label', open ? 'Menü schließen' : 'Menü öffnen');
+    const icon = toggle.querySelector('i');
+    if (icon) {
+        icon.className = open ? 'fas fa-xmark' : 'fas fa-bars';
+    }
+}
+
+function toggleMobileMenu() {
+    setMobileMenuOpen(!document.getElementById('mobileMenu')?.classList.contains('active'));
+}
+
+// Sticky tab bar sits right under the fixed navbar, whatever height the navbar ends up with
+function initNavMetrics() {
+    const navbar = document.querySelector('.navbar');
+    const row = navbar?.querySelector('.nav-container');
+    if (!row) return;
+
+    const update = () => {
+        const border = parseFloat(getComputedStyle(navbar).borderBottomWidth) || 0;
+        // Measure only the top row so an open mobile menu does not push the tab bar down
+        const height = row.getBoundingClientRect().bottom - navbar.getBoundingClientRect().top + border;
+        document.documentElement.style.setProperty('--nav-h', `${Math.round(height)}px`);
+    };
+
+    update();
+    if ('ResizeObserver' in window) {
+        new ResizeObserver(update).observe(row);
+    }
+    window.addEventListener('resize', update);
+}
+
+// After a tab switch, bring its content into view when the click came from somewhere it is not visible
+function scrollActiveTabContentIntoView() {
+    const section = document.querySelector('.tab-content.active');
+    const tabBar = document.getElementById('clanTabNavigation');
+    if (!section) return;
+
+    const navHeight = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--nav-h')) || 0;
+    const stickyOffset = navHeight + (tabBar?.offsetHeight || 0) + 12;
+    const top = section.getBoundingClientRect().top;
+
+    if (top >= stickyOffset - 1 && top <= window.innerHeight - 120) return;
+
+    window.scrollTo({
+        top: window.scrollY + top - stickyOffset,
+        behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth'
+    });
 }
 
 // ========================================
@@ -2240,6 +2295,17 @@ function toggleViewMode() {
 // ENHANCED PROJECT OPERATIONS
 // ========================================
 
+// Dark or white text, whichever reads better on a coloured chip
+function getReadableTextColor(hex) {
+    const match = /^#?([0-9a-f]{6})$/i.exec(String(hex || '').trim());
+    if (!match) return '#ffffff';
+    const [r, g, b] = [0, 2, 4].map(i => parseInt(match[1].slice(i, i + 2), 16) / 255)
+        .map(v => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
+    const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    // Contrast against white vs. against #111216
+    return (1.05 / (luminance + 0.05)) >= ((luminance + 0.05) / 0.0567) ? '#ffffff' : '#111216';
+}
+
 function addProjectToGrid(project, targetGrid = null) {
     const grid = targetGrid || document.getElementById('projectsGrid');
     if (!grid) return;
@@ -2263,7 +2329,7 @@ function addProjectToGrid(project, targetGrid = null) {
     
     const platformBadges = platforms.map(p => {
         const platformVisual = getPlatformVisual(p);
-        return `<span class="project-platform" style="background: ${platformVisual.color}; opacity: 0.8;">
+        return `<span class="project-platform" style="background: ${platformVisual.color}; color: ${getReadableTextColor(platformVisual.color)};">
                     <i class="${platformVisual.icon}"></i> ${sanitizeInput(platformVisual.name)}
                 </span>`;
     }).join('');
@@ -2285,7 +2351,7 @@ function addProjectToGrid(project, targetGrid = null) {
                 <span>${sanitizeInput(owner.name)}</span>
             </div>
             <h3 class="project-title">${sanitizeInput(project.name)}</h3>
-            <span class="project-type" style="background: ${typeConfig.color}">
+            <span class="project-type" style="background: ${typeConfig.color}; color: ${getReadableTextColor(typeConfig.color)};">
                 <i class="${typeConfig.icon}"></i> ${typeConfig.name}
             </span>
             <div class="project-platforms-badges">
@@ -4559,6 +4625,7 @@ function handleKeyboardShortcuts(e) {
     
     // Escape: Close modals
     if (e.key === 'Escape') {
+        setMobileMenuOpen(false);
         closeAdminModal();
         closeEditModal();
         closeLegalModal();
@@ -4770,6 +4837,10 @@ function switchClanTab(tabId) {
     document.querySelectorAll('[data-tab-target]').forEach(link => {
         link.classList.toggle('active', link.dataset.tabTarget === tabId);
     });
+
+    if (typeof observeReveals === 'function') {
+        requestAnimationFrame(observeReveals);
+    }
 }
 
 function handleClanTabClick(event) {
@@ -4781,6 +4852,7 @@ function handleClanTabClick(event) {
 
     event.preventDefault();
     switchClanTab(tabId);
+    scrollActiveTabContentIntoView();
 }
 
 function handleAdminTabs(e) {
@@ -5397,6 +5469,140 @@ async function handleNnnSettingsSave(e) {
 }
 
 // ========================================
+// MOTION ENHANCEMENTS
+// ========================================
+
+const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+const hasFinePointer = window.matchMedia('(hover: hover) and (pointer: fine)');
+
+// Sliding pill behind the active clan tab, drawn with clip-path so only transform-cheap work runs
+function initTabIndicator() {
+    const nav = document.getElementById('clanTabNavigation');
+    if (!nav || nav.querySelector('.tab-indicator')) return;
+
+    const indicator = document.createElement('span');
+    indicator.className = 'tab-indicator';
+    indicator.setAttribute('aria-hidden', 'true');
+    nav.prepend(indicator);
+    nav.classList.add('has-indicator');
+
+    const update = () => {
+        const active = nav.querySelector('.tab-btn.active:not(.hidden)');
+        if (!active) {
+            indicator.style.opacity = '0';
+            return;
+        }
+
+        // Reset first so a stale width cannot keep the row scrollable after a resize
+        indicator.style.width = '0px';
+        const width = nav.scrollWidth;
+        indicator.style.width = `${width}px`;
+
+        const top = active.offsetTop;
+        const left = active.offsetLeft;
+        const right = width - (left + active.offsetWidth);
+        const bottom = nav.clientHeight - (top + active.offsetHeight);
+        indicator.style.opacity = '1';
+        indicator.style.clipPath = `inset(${top}px ${right}px ${bottom}px ${left}px round 999px)`;
+
+        // Center the active tab when the row scrolls horizontally (mobile)
+        if (width > nav.clientWidth + 1) {
+            const visibleLeft = nav.scrollLeft;
+            const visibleRight = visibleLeft + nav.clientWidth;
+            if (left < visibleLeft + 16 || left + active.offsetWidth > visibleRight - 16) {
+                nav.scrollTo({
+                    left: left - (nav.clientWidth - active.offsetWidth) / 2,
+                    behavior: indicator.classList.contains('is-ready') && !prefersReducedMotion.matches ? 'smooth' : 'auto'
+                });
+            }
+        }
+    };
+
+    update();
+    // Enable the transition only after the first position so it does not fly in on load
+    requestAnimationFrame(() => indicator.classList.add('is-ready'));
+
+    new MutationObserver(update).observe(nav, { subtree: true, attributes: true, attributeFilter: ['class'] });
+    if ('ResizeObserver' in window) {
+        new ResizeObserver(update).observe(nav);
+    }
+    document.fonts?.ready.then(update);
+}
+
+const REVEAL_SELECTOR = [
+    '.section-intro',
+    '.hero-highlight-card',
+    '.event-card',
+    '.member-overview-card',
+    '.contact-card',
+    '.updates-info-card',
+    '.internal-content-card',
+    '.nnn-card',
+    '.footer-section'
+].join(', ');
+let revealObserver = null;
+
+// Fade content up as it scrolls into view; anything already on screen is left alone
+function observeReveals() {
+    if (prefersReducedMotion.matches || !('IntersectionObserver' in window)) return;
+
+    if (!revealObserver) {
+        revealObserver = new IntersectionObserver(entries => {
+            const visible = entries.filter(entry => entry.isIntersecting);
+            visible.forEach((entry, index) => {
+                const element = entry.target;
+                revealObserver.unobserve(element);
+                element.style.transitionDelay = `${Math.min(index, 5) * 60}ms`;
+                element.classList.add('reveal-in');
+                element.addEventListener('transitionend', () => {
+                    element.classList.remove('reveal-pending', 'reveal-in');
+                    element.style.transitionDelay = '';
+                }, { once: true });
+            });
+        }, { rootMargin: '0px 0px -8% 0px' });
+    }
+
+    document.querySelectorAll(REVEAL_SELECTOR).forEach(element => {
+        if (element.dataset.revealBound) return;
+        element.dataset.revealBound = 'true';
+
+        const rect = element.getBoundingClientRect();
+        // Hidden tabs report a zero rect; they get their entrance from the tab transition instead
+        if (!rect.height || rect.top < window.innerHeight) return;
+
+        element.classList.add('reveal-pending');
+        revealObserver.observe(element);
+    });
+}
+
+// Soft light that follows the cursor across cards (desktop only, decorative)
+function initCardSpotlight() {
+    let frame = null;
+    let lastEvent = null;
+
+    document.addEventListener('pointermove', event => {
+        if (!hasFinePointer.matches || prefersReducedMotion.matches) return;
+        lastEvent = event;
+        if (frame) return;
+
+        frame = requestAnimationFrame(() => {
+            frame = null;
+            const card = lastEvent.target.closest?.('.project-card, .event-card, .hero-highlight-card, .member-overview-card, .contact-card');
+            if (!card) return;
+            const rect = card.getBoundingClientRect();
+            card.style.setProperty('--spot-x', `${lastEvent.clientX - rect.left}px`);
+            card.style.setProperty('--spot-y', `${lastEvent.clientY - rect.top}px`);
+        });
+    }, { passive: true });
+}
+
+function initMotionEnhancements() {
+    initTabIndicator();
+    initCardSpotlight();
+    observeReveals();
+}
+
+// ========================================
 // PARTICLE ANIMATION
 // ========================================
 
@@ -5556,6 +5762,8 @@ async function init() {
         await loadDiscordArchiveManifest();
         refreshAppUI();
         initParticles();
+        initNavMetrics();
+        initMotionEnhancements();
         initFAQ();
         syncPlatformNameField(document.getElementById('projectPlatform'));
         syncPlatformNameField(document.getElementById('editProjectPlatform'));
@@ -5572,11 +5780,8 @@ async function init() {
         console.error('Initialization error:', error);
     }
 
-    setTimeout(() => {
-        if (loadingOverlay) {
-            loadingOverlay.classList.add('hidden');
-        }
-    }, 500);
+    // No artificial wait: hide as soon as the first frame with content is ready
+    requestAnimationFrame(() => loadingOverlay?.classList.add('hidden'));
 }
 
 // ========================================
@@ -5739,7 +5944,16 @@ document.getElementById('themeToggle').addEventListener('click', toggleTheme);
 // Mobile menu
 document.getElementById('mobileMenuToggle').addEventListener('click', toggleMobileMenu);
 document.querySelectorAll('.mobile-menu a').forEach(link => {
-    link.addEventListener('click', toggleMobileMenu);
+    link.addEventListener('click', () => setMobileMenuOpen(false));
+});
+// Close the menu on a tap outside the navbar or when the layout grows past the mobile breakpoint
+document.addEventListener('click', event => {
+    if (document.getElementById('mobileMenu')?.classList.contains('active') && !event.target.closest('.navbar')) {
+        setMobileMenuOpen(false);
+    }
+});
+window.matchMedia('(min-width: 769px)').addEventListener?.('change', event => {
+    if (event.matches) setMobileMenuOpen(false);
 });
 
 // Scroll events
